@@ -89,6 +89,8 @@ process check_sex {
     path(C2_bed)
     path(C2_bim)
     path(C2_fam)
+    val(F_threshold_male)
+    val(F_threshold_female)
     
     output:
     path "C3.bed", emit: bed 
@@ -99,23 +101,50 @@ process check_sex {
     path "after.sexcheck", emit: sexcheck_after
  
     
-    shell:
-    '''
-    plink --bfile !{C2_bed.baseName} \
+    // shell:
+    // '''
+    // plink --bfile !{C2_bed.baseName} \
+    //     --check-sex \
+    //     --out before
+    // # Identify the samples with sex discrepancies 
+    // grep "PROBLEM" before.sexcheck | awk '{print $1,$2}'> \
+    //     problematic_samples.txt
+    // # Delete all problematic samples
+    // plink --bfile !{C2_bed.baseName} \
+    //     --remove problematic_samples.txt \
+    //     --make-bed \
+    //     --out C3
+    // plink --bfile C3 \
+    //     --check-sex \
+	// --out after 
+    // '''
+
+    script:
+    """
+    plink --bfile ${C2_bed.baseName} \
         --check-sex \
+        --allow-no-sex \
         --out before
-    # Identify the samples with sex discrepancies 
-    grep "PROBLEM" before.sexcheck | awk '{print $1,$2}'> \
-        problematic_samples.txt
+
+    # Identify problematic samples 
+    # Get IID and FID for individuals that do not pass the 
+    # thresholds, but keep individuals with PEDSEX = 0
+    awk '{
+        # Apply F-stat thresholds based on reference sex
+        if ((\$3 == 1 && \$6 < ${F_threshold_male}) || (\$3 == 2 && \$6 > ${F_threshold_female})) {
+            print \$1, \$2
+        }
+    }' before.sexcheck > problematic_samples.txt
+
     # Delete all problematic samples
-    plink --bfile !{C2_bed.baseName} \
+    plink --bfile ${C2_bed.baseName} \
         --remove problematic_samples.txt \
         --make-bed \
         --out C3
     plink --bfile C3 \
         --check-sex \
 	--out after 
-    '''
+    """
 }
 
 process plot_sex {
@@ -124,15 +153,17 @@ process plot_sex {
 
     input:
     path(sexcheck_before)
-    path(sexcheck_after) 
+    path(sexcheck_after)
+    val(F_threshold_male)
+    val(F_threshold_female)
 
     output:
     path "*.png", emit: figure
 
-    shell:
-    '''
-    plot_sex.R !{sexcheck_before} !{sexcheck_after}
-    '''
+    script:
+    """
+    plot_sex.R ${sexcheck_before} ${sexcheck_after} ${F_threshold_male} ${F_threshold_female}
+    """
 }
 
 // STEP C4: Remove sex chromosomes ---------------------------------------------
@@ -266,14 +297,33 @@ process relatedness {
     path "C6.bim", emit: bim
     path "C6.fam", emit: fam
     path "C6.log", emit: log
-    
+    path "C6.kin0", emit: kinship_matrix
+
     shell:
     '''
     plink2 --bfile !{C5_bed.baseName} \
         --king-cutoff !{params.king_cutoff} \
         --make-bed \
+        --make-king-table \
         --out C6
     '''
+}
+
+process plot_kinship_matrix {
+    label 'small'
+    publishDir "${params.results}/qc/figures/", mode: 'copy'
+
+    input: 
+    path(kinship_matrix)
+
+    output:
+    path "*.png", emit: figure
+
+    shell:
+    '''
+    plot_kinship_matrix.R !{kinship_matrix}
+    '''
+
 }
 
 // STEP C7: Remove samples with missing phenotypes -----------------------------

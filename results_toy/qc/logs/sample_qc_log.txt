@@ -1,0 +1,5 @@
+stage variants samples pheno pheno_case pheno_control pheno_miss wd
+C1.log 6515 100 100 48 52 0 /home/blobato/nextflow_scripts/snpQT/work/1a/4722d93ebf34eb7f1e57a40b4ddbe5
+C2.log 6515 100 48 22 26 0 /home/blobato/nextflow_scripts/snpQT/work/41/29e0248ccc68452c03e870b70d5e0b
+C5.log 6515 48 48 22 26 0 /home/blobato/nextflow_scripts/snpQT/work/81/e6d7d53873e7752a4b36a587a1f860
+C6.log 6515 48 48 22 26 0 /home/blobato/nextflow_scripts/snpQT/work/79/dff4cfe38d937720220c6a7a51e8d3

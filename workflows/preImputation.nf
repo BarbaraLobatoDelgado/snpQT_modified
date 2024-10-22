@@ -24,7 +24,10 @@ workflow preImputation {
     Channel
       .fromPath("${params.db}/h37_squeezed.fasta", checkIfExists: true)
       .set { g37 }
-    run_snpflip(set_chrom_code.out.bed, set_chrom_code.out.bim, set_chrom_code.out.fam, g37)
+    Channel
+      .fromPath("${params.db}/hg38.fa", checkIfExists: true)
+      .set { g38 }
+    run_snpflip(set_chrom_code.out.bed, set_chrom_code.out.bim, set_chrom_code.out.fam, g37, g38)
     flip_snps(ch_bed, ch_bim, ch_fam, run_snpflip.out.rev, run_snpflip.out.ambig)
     fix_duplicates(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam)
     to_vcf(fix_duplicates.out.bed, fix_duplicates.out.bim, fix_duplicates.out.fam)
@@ -35,7 +38,7 @@ workflow preImputation {
     Channel
       .fromPath("${params.db}/All_20180423.vcf.gz.tbi", checkIfExists: true)
       .set{ dbsnp_idx }
-    check_ref_allele(to_bcf.out.bcf, dbsnp, dbsnp_idx, g37)
+    check_ref_allele(to_bcf.out.bcf, dbsnp, dbsnp_idx, g37, g38)
     bcf_to_vcf(check_ref_allele.out.bcf)
     // logs = fix_duplicates.out.log.concat(to_vcf.out.log).collect()
     // parse_logs("pre_imputation", logs, "pre_imputation_log.txt")

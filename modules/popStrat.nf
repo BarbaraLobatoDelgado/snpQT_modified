@@ -14,9 +14,47 @@ process filter_maf {
     path "D3.bim", emit: bim
     path "D3.fam", emit: fam
     path "D3.log", emit: log
+
+    script:
+    // Groovy code to set up the ld_option variable
+    // Conditional addition of --bad-ld based on the value of the bad_ld parameter
+    def ld_option = params.bad_ld ? "--bad-ld" : ""
+
+    // shell:
+    // '''
+    // plink2 --bfile !{bed.baseName} \
+    //     --geno !{params.variant_geno} \
+    //     --make-bed \
+    //     --out geno
+      
+    // # MAF filtering < 5%
+    // plink2 --bfile geno \
+    //     --maf 0.05 \
+    //     --make-bed \
+    //     --out maf_filtered
     
-    shell:
-    '''
+    // # Pruning user's dataset
+    // plink2 --bfile maf_filtered \
+    //     --exclude !{exclude_region} \
+    //     --indep-pairwise !{params.indep_pairwise} \
+    //     ${ld_option} \
+    //     --out indepSNPs_1k
+      
+    // plink2 --bfile maf_filtered \
+    //     --extract indepSNPs_1k.prune.in \
+    //     --make-bed \
+    //     --out maf_filtered_indep
+          
+    // # Change the chromosome codes
+    // plink2 --bfile maf_filtered_indep \
+    //     --output-chr MT \
+    //     --make-bed \
+    //     --out D3
+    // '''
+
+    shell: 
+    """ 
+    # Filter by genotype call rate (?)
     plink2 --bfile !{bed.baseName} \
         --geno !{params.variant_geno} \
         --make-bed \
@@ -32,6 +70,7 @@ process filter_maf {
     plink2 --bfile maf_filtered \
         --exclude !{exclude_region} \
         --indep-pairwise !{params.indep_pairwise} \
+        ${ld_option} \
         --out indepSNPs_1k
       
     plink2 --bfile maf_filtered \
@@ -44,7 +83,7 @@ process filter_maf {
         --output-chr MT \
         --make-bed \
         --out D3
-    '''
+    """
 }
 
 // STEP D4: Fix strand errors and remove ambiguous SNPs ------------------------
@@ -58,19 +97,33 @@ process run_snpflip {
     path(bim)
     path(fam)
     path(g37)
+    path(g38)
+
+    // Select genome reference based on input_build
+    script:
+    def genome_reference = (params.input_build = '38') ? g38 : g37
 
     output:
     path "flipped_snps.reverse", emit: rev
     path "flipped_snps.ambiguous", emit: ambig
 
+    // shell:
+    // '''
+    // # Run snpflip to identify ambiguous SNPs and SNPs that are located on the 
+    // # reverse strand
+    // snpflip -b !{bim} \
+    //     -f !{g37} \
+    //     -o flipped_snps 
+    // '''
+
     shell:
-    '''
+    """
     # Run snpflip to identify ambiguous SNPs and SNPs that are located on the 
     # reverse strand
     snpflip -b !{bim} \
-        -f !{g37} \
+        -f ${genome_reference} \
         -o flipped_snps 
-    '''
+    """
 }
 
 process flip_snps {  
@@ -243,7 +296,7 @@ process popfile {
     shell:
     '''
     # Make 1st popfile, using the 20130502 panel using superpopulation codes
-    # (i.e., AFR,AMR,EASN,SAS and EUR)
+    # (i.e., AFR, AMR, EAS, SAS and EUR)
     awk '{print $1,$1,$3}' !{panel} > super_popfile.txt
 
     # Make 2nd popfile, using the 20130502 panel using subpopulation codes 

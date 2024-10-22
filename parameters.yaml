@@ -75,6 +75,9 @@
   
   # control the pruning process
   indep_pairwise: '50 5 0.2'
+
+  # set to true if you want to skip the LD calculation during population stratification
+  bad_ld: false
   
   # remove variants based on call rate (accepted range 0-1)
   # example below: variants with =<98% call rate are removed

@@ -6,6 +6,8 @@ library('cowplot')
 # Args
 # 1: before plink .sexcheck file path
 # 2: after plink .sexcheck file path
+# 3: F_threshold_male
+# 4: F_threshold_female
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -18,6 +20,9 @@ read_table(args[[2]]) %>%
   mutate(type = "after") %>%
   bind_rows(before) %>%
   mutate(type = fct_relevel(type, "before")) -> gender 
+
+F_threshold_male <- as.numeric(args[[3]])
+F_threshold_female <- as.numeric(args[[4]])
 
 gender %>%
   ggplot(.) +
@@ -63,7 +68,12 @@ gender %>%
 	theme_cowplot() +
 	background_grid()+
 	panel_border() +
-	scale_y_continuous(expand = expansion(mult = c(0, 0.05)))+ 
+	scale_y_continuous(
+	  expand = expansion(mult = c(0, 0.05)),
+	  breaks = seq(0, 1, by = 0.1),  # Adjust the by value as needed
+	  limits = c(min(F)-0.1, 1))+ 
+  geom_hline(yintercept = F_threshold_male, color = "blue", linetype = "dashed", size = 1) +
+  geom_hline(yintercept = F_threshold_female, color = "red", linetype = "dashed", size = 1) +
 	facet_grid(~ type ) +
     geom_point(aes(x=PEDSEX,y=F,colour=PEDSEX)) +
     scale_color_manual(breaks = c("0", "1", "2"), 

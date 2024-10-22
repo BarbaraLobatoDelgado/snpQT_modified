@@ -40,7 +40,10 @@ workflow pop_strat {
     Channel
       .fromPath("${params.db}/h37_squeezed.fasta", checkIfExists: true)
       .set { g37 }
-    run_snpflip(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, g37)
+    Channel
+      .fromPath("${params.db}/hg38.fa", checkIfExists: true)
+      .set { g38 }
+    run_snpflip(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, g37, g38)
     flip_snps(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, run_snpflip.out.rev, run_snpflip.out.ambig)
     align(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, ref_bed, ref_bim, ref_fam)
     merge(align.out.bed, align.out.bim, align.out.fam, ref_bed, ref_bim, ref_fam)

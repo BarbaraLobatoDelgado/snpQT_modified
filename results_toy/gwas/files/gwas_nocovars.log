@@ -1,0 +1,27 @@
+PLINK v2.00a2.3LM 64-bit Intel (24 Jan 2020)
+Options in effect:
+  --adjust
+  --bfile E11
+  --ci 0.95
+  --glm hide-covar firth-fallback
+  --out gwas_nocovars
+  --output-chr 26
+
+Hostname: IR-BIOINF02
+Working directory: /home/blobato/nextflow_scripts/snpQT/work/f5/1a9611e029ac8ca0cf24c0b294e50e
+Start time: Tue Sep  3 10:50:08 2024
+
+Random number seed: 1725353408
+128830 MiB RAM detected; reserving 64415 MiB for main workspace.
+Using up to 56 threads (change this with --threads).
+48 samples (48 females, 0 males; 48 founders) loaded from E11.fam.
+2612 variants loaded from E11.bim.
+1 binary phenotype loaded (22 cases, 26 controls).
+Calculating allele frequencies... done.
+--glm logistic-Firth hybrid regression on phenotype 'PHENO1': done.
+Results written to gwas_nocovars.PHENO1.glm.logistic.hybrid .
+--adjust: Genomic inflation est. lambda (based on median chisq) = 1.
+--adjust values (2612 tests) written to
+gwas_nocovars.PHENO1.glm.logistic.hybrid.adjusted .
+
+End time: Tue Sep  3 10:50:08 2024

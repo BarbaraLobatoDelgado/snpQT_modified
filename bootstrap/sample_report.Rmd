@@ -24,7 +24,6 @@ if (length(sexcheck) > 0) {
 
 ## Missingness
 
-
 ```{r, echo=FALSE, out.width="80%"}
 knitr::include_graphics("sample_missingness_hist.png")
 knitr::include_graphics("sample_missingness_scatter.png")
@@ -35,6 +34,12 @@ knitr::include_graphics("sample_missingness_scatter.png")
 ```{r, echo=FALSE, out.width="80%"}
 knitr::include_graphics("heterozygosity_rate_scatter.png")
 knitr::include_graphics("heterozygosity_rate_hist.png")
+```
+
+## Kinship matrix
+
+```{r, echo=FALSE, out.width="80%"}
+knitr::include_graphics("kinship_matrix_heatmap.png")
 ```
 
 ## Log

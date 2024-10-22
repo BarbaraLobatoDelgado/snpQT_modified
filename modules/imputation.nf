@@ -100,17 +100,22 @@ process check_ref_allele {
     path(dbsnp)
     path(dbsnp_idx)
     path(g37)
+    path(g38)
 
     output:
     path "F6.bcf", emit: bcf
 
+    // Select genome reference based on input_build
+    script:
+    def genome_reference = (params.input_build = '38') ? g38 : g37
+
     shell:
-    '''
+    """
     bcftools +fixref !{bcf} \
         -Ob -o F6.bcf -- \
-        -d -f !{g37} \
+        -d -f ${genome_reference} \
         -i !{dbsnp}
-    '''
+    """
 }
 
 // STEP F7: Sort BCF, convert .bcf file to .vcf.gz file and index the vcf.gz -------------------------------
