@@ -32,10 +32,18 @@
   qc: true
   # population stratification workflow
   pop_strat: false 
+  # filter out individuals that do not cluster with EUR population during population PCA
+  # by default, individuals should be filtered
+  pop_strat_filter: true
   # local phasing and imputation workflow
   impute: false
   # pre-Imputation QC workflow
   pre_impute: false
+  # Coding of chromosomes
+  # Passed to set_chrom_code() in imputation.nf and flip_snps() in popStrat.nf to indicate how to code chromosomes
+  output_chr: 26
+  # pre-Imputation QC workflow branch for TOPMed imputation server
+  pre_impute_TOPMed: true
   # post-Imputation QC workflow
   post_impute: false
   # GWAS workflow

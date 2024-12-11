@@ -5,6 +5,7 @@ nextflow.enable.dsl = 2
 include {filter_maf} from '../modules/popStrat.nf' // D3
 include {run_snpflip} from '../modules/popStrat.nf' // D4 
 include {flip_snps} from '../modules/popStrat.nf' // D4
+include {remove_ambiguous_snps} from '../modules/popStrat.nf' // D4b
 include {align} from '../modules/popStrat.nf' // D5
 include {merge} from '../modules/popStrat.nf' // D6
 include {pca_prep} from '../modules/popStrat.nf' // D6
@@ -44,8 +45,10 @@ workflow pop_strat {
       .fromPath("${params.db}/hg38.fa", checkIfExists: true)
       .set { g38 }
     run_snpflip(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, g37, g38)
-    flip_snps(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, run_snpflip.out.rev, run_snpflip.out.ambig)
-    align(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, ref_bed, ref_bim, ref_fam)
+    flip_snps(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, run_snpflip.out.rev) // , run_snpflip.out.ambig
+    remove_ambiguous_snps(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, run_snpflip.out.ambig)
+    align(remove_ambiguous_snps.out.bed, remove_ambiguous_snps.out.bim, remove_ambiguous_snps.out.fam, ref_bed, ref_bim, ref_fam)
+    // align(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, ref_bed, ref_bim, ref_fam)
     merge(align.out.bed, align.out.bim, align.out.fam, ref_bed, ref_bim, ref_fam)
     pca_prep(merge.out.bed, merge.out.bim, merge.out.fam, exclude)
     Channel

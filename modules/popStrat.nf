@@ -20,38 +20,6 @@ process filter_maf {
     // Conditional addition of --bad-ld based on the value of the bad_ld parameter
     def ld_option = params.bad_ld ? "--bad-ld" : ""
 
-    // shell:
-    // '''
-    // plink2 --bfile !{bed.baseName} \
-    //     --geno !{params.variant_geno} \
-    //     --make-bed \
-    //     --out geno
-      
-    // # MAF filtering < 5%
-    // plink2 --bfile geno \
-    //     --maf 0.05 \
-    //     --make-bed \
-    //     --out maf_filtered
-    
-    // # Pruning user's dataset
-    // plink2 --bfile maf_filtered \
-    //     --exclude !{exclude_region} \
-    //     --indep-pairwise !{params.indep_pairwise} \
-    //     ${ld_option} \
-    //     --out indepSNPs_1k
-      
-    // plink2 --bfile maf_filtered \
-    //     --extract indepSNPs_1k.prune.in \
-    //     --make-bed \
-    //     --out maf_filtered_indep
-          
-    // # Change the chromosome codes
-    // plink2 --bfile maf_filtered_indep \
-    //     --output-chr MT \
-    //     --make-bed \
-    //     --out D3
-    // '''
-
     shell: 
     """ 
     # Filter by genotype call rate (?)
@@ -80,7 +48,7 @@ process filter_maf {
           
     # Change the chromosome codes
     plink2 --bfile maf_filtered_indep \
-        --output-chr MT \
+        --output-chr ${params.output_chr} \
         --make-bed \
         --out D3
     """
@@ -91,7 +59,6 @@ process run_snpflip {
     label 'medium'
     label 'snpflip'
 	
-
     input: 
     path(bed)
     path(bim)
@@ -106,15 +73,6 @@ process run_snpflip {
     output:
     path "flipped_snps.reverse", emit: rev
     path "flipped_snps.ambiguous", emit: ambig
-
-    // shell:
-    // '''
-    // # Run snpflip to identify ambiguous SNPs and SNPs that are located on the 
-    // # reverse strand
-    // snpflip -b !{bim} \
-    //     -f !{g37} \
-    //     -o flipped_snps 
-    // '''
 
     shell:
     """
@@ -134,6 +92,31 @@ process flip_snps {
     path(bim)
     path(fam)
     path(snpflip_rev)
+
+    output:
+    path "flipped.bed", emit: bed
+    path "flipped.bim", emit: bim
+    path "flipped.fam", emit: fam
+    path "flipped.log", emit: log
+
+    shell:
+    '''
+    # Flip all reversed SNPs
+    plink --bfile !{bed.baseName} \
+        --flip !{snpflip_rev} \
+        --make-bed \
+        --out flipped
+    '''
+}
+
+process remove_ambiguous_snps {  
+    label 'plink2'
+	
+    input:
+    path(bed)
+    path(bim)
+    path(fam)
+    // path(flipped)
     path(snpflip_ambig)
 
     output:
@@ -143,19 +126,14 @@ process flip_snps {
     path "D4.log", emit: log
 
     shell:
-    '''
-    # Flip all reversed SNPs
-    plink --bfile !{bed.baseName} \
-        --flip !{snpflip_rev} \
-        --make-bed \
-        --out flipped
-
+    """
     # Remove ambiguous SNPs
-    plink --bfile flipped \
+    plink2 --bfile !{bed.baseName} \
         --exclude !{snpflip_ambig} \
         --make-bed \
-        --out D4
-    '''
+        --out D4 \
+        --output-chr ${params.output_chr}
+    """
 }
 
 // STEP D5: Align the reference allele according to 1k reference genome --------
@@ -363,21 +341,33 @@ process pca_plink {
     output:
     path 'before.eigenvec', emit: before
     path 'after.eigenvec', emit: after
-    
+
     shell:
     '''
+    # Run PCA on the original data
     plink --bfile !{bed.baseName} \
-	--pca header \
-	--out before
-    # Keep only a homogenous cohort
-    awk '{print $1}' !{eigenvec} | tail -n +2 | awk -F ":" '{print $1,$2}' > keep_sample_list.txt
-    plink --bfile !{bed.baseName} \
-        --keep keep_sample_list.txt \
-        --make-bed \
-        --out keep
-    plink --bfile keep \
         --pca header \
-        --out after
+        --out before
+
+    # Check if we should filter by ancestry
+    if [ "!{params.pop_strat_filter}" = "true" ]; then
+        # Create sample list for a homogeneous cohort
+        awk '{print $1}' !{eigenvec} | tail -n +2 | awk -F ":" '{print $1,$2}' > keep_sample_list.txt
+
+        # Subset individuals in PLINK files
+        plink --bfile !{bed.baseName} \
+            --keep keep_sample_list.txt \
+            --make-bed \
+            --out keep
+
+        # Run PCA on filtered data
+        plink --bfile keep \
+            --pca header \
+            --out after 
+    else
+        # If non european patients are not filtered, just use the original PCA output
+        cp before.eigenvec after.eigenvec
+    fi
     '''
 }
 

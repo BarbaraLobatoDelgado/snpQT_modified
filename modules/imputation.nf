@@ -17,16 +17,18 @@ process set_chrom_code {
     path "F1.log", emit: log
     
     shell:
-    '''
+    """
     plink2 --bfile !{bed.baseName} \
-        --output-chr MT \
-	--make-bed \
+        --output-chr ${params.output_chr} \
+	    --make-bed \
         --out F1  
-    '''
+    """
 }
 
 // STEP F2: D2: Remove ambiguous SNPs and flip reverse SNPs -------------------------
 // note: taken care of by popstrat modules D4 now
+
+// STEP F2a: 
 
 // STEP F3: Remove one of each pair of duplicated SNPs 
 process fix_duplicates {
@@ -44,13 +46,14 @@ process fix_duplicates {
     path "F3.log", emit: log
     
     shell:
-    '''
+    """
     # F3: Deduplicate variants
     plink2 --bfile !{bed.baseName} \
-      --rm-dup 'force-first' \
-      --make-bed \
-      --out F3
-    '''
+        --output-chr ${params.output_chr} \
+        --rm-dup 'force-first' \
+        --make-bed \
+        --out F3
+    """
 }
 
 // STEP F4: Convert Plink file to .bcf file ---------------------------------
@@ -92,29 +95,49 @@ process to_bcf {
 }
 
 // STEP F6: Check and fix the REF allele --------------------------------------
+// Checks and corrects reference alleles in the provided BCF/VCF file by comparing them to a reference genome
+// When a mismatch is found, the tool attempts to correct it based on the reference provided
+// Using a dbSNP file can help validate that the reference alleles are accurate, as it provides known allele information for each SNP position
 process check_ref_allele {
     label 'bcftools'
 	
     input:
     path(bcf)
-    path(dbsnp)
-    path(dbsnp_idx)
     path(g37)
     path(g38)
+    path(dbsnp37)
+    path(dbsnp38)
+    path(dbsnp_idx38)
+    path(dbsnp_idx37)
 
     output:
     path "F6.bcf", emit: bcf
 
-    // Select genome reference based on input_build
     script:
-    def genome_reference = (params.input_build = '38') ? g38 : g37
+    // Define variables based on conditionals
+    def genome_reference
+    def dbsnp
+    def dbsnp_idx
+
+    if (params.input_build == 38) {
+        genome_reference = g38
+        dbsnp = dbsnp38
+        dbsnp_idx = dbsnp_idx38
+        // println "Using ${g38} as genome reference file and ${dbsnp38} as SNP database"
+    } else {
+        genome_reference = g37
+        dbsnp = dbsnp37
+        dbsnp_idx = dbsnp_idx37
+        // println "Using ${g37} as genome reference file and ${dbsnp37} as SNP database"
+    }   
 
     shell:
     """
-    bcftools +fixref !{bcf} \
+    # Swap the alleles
+    bcftools +fixref ${bcf} \
         -Ob -o F6.bcf -- \
         -d -f ${genome_reference} \
-        -i !{dbsnp}
+        -i ${dbsnp}
     """
 }
 
@@ -285,6 +308,118 @@ process merge_imp {
     '''
     # file order is important so use command substition
     bcftools concat -n $(ls *.vcf.gz | sort -t . -k 1n) -Oz -o merged_imputed.vcf.gz --threads !{task.cpus}
+    '''
+}
+
+
+// Steps for imputation in TOPMed server 
+// =============================================================================
+
+
+// STEP F3a: create allele frequency file and output chromosomes as 1-26
+process create_afreq_file {
+    label 'plink2'
+
+    input:
+    path(bed)
+    path(bim)
+    path(fam)
+
+    output:
+    path "F3a.afreq", emit: afreq
+    path "F3a.log", emit : log
+
+    shell:
+    """
+    # Create allele frequency file
+    plink2 --bfile !{bed.baseName} \
+        --freq \
+        --out F3a
+    """
+}
+
+// STEP F3b: Run McCarthy Group Tools Perl script (v4.3.0)
+// Does a series of checks before imputation
+// Checks: strand, alleles, position, REF/ALT assignments and frequency differences
+// Removes: A/T & G/C SNPs if MAF > 0.4, SNPs with differing alleles, SNPs with > 0.2 allele frequency difference (can be removed/changed in V4.2.2), SNPs not in reference panel 
+// Produces: a set of plink commands to update or remove SNPs based on the checks as well as a file (FreqPlot) of cohort allele frequency vs reference panel allele frequency
+process run_mccarthy_tools {
+    label 'perl'
+    label 'plink1'
+
+    // Number of CPUs
+    cpus = 16
+
+    input:
+    path(bed)
+    path(bim)
+    path(fam)
+    path(afreq)
+    path(mccarthy_tools_script)
+    path(topmed_ref_hg38)
+
+    output:
+    path "F3-updated-chr*.vcf", emit: chr_vcf 
+
+    shell:
+    '''
+    # Run MacCarthy Group tools Perl script to generate directory with Bash commands and files # -output mccarthy_tools
+    perl !{mccarthy_tools_script} \
+        -b !{bim} \
+        -f !{afreq} \
+        -r !{topmed_ref_hg38} \
+        -h \
+        --output 
+
+    # Go into folder
+    # cd mccarthy_tools
+    # Give permision for execution
+    chmod +x Run-plink.sh
+    # Copy the original script to a new file to prevent accumulative modifications
+    # cp Run-plink.sh Run-plink_modified.sh
+    # Change lines starting with plink to plink1.9
+    sed -i 's/^plink/plink1.9/' Run-plink.sh 
+    # Remove last line 
+    # sed -i '\$d' Run-plink.sh
+    # Run plink commands
+    sh Run-plink.sh
+    '''
+}
+
+// STEP F3c: Run .sh file containing PLINK commands and get VCF files separated for chromosome
+process prepare_VCFs_for_TOPMed_imputation {
+    label 'bcftools'
+
+    // Directory in which output files is saved
+    publishDir "${params.results}/VCFs_for_TOPMed_imputation/", mode: 'copy'
+
+    // // Copy file in new directory instead of creating symlink
+    // stageInMode 'copy'
+
+    input:
+    path(chr_vcf)
+    
+    output:
+    // path "*.vcf.gz", "*vcf.gz.tbi"
+    // tuple(path("*.vcf.gz"), path("*.vcf.gz.tbi")), emit: vcf_gz, vcf_gz_tbi
+    path "*.vcf.gz", emit: vcf_gz
+    path "*.vcf.gz.tbi", emit: vcf_gz_tbi
+
+    shell:
+    '''
+    echo !{chr_vcf}
+    
+    # Loop over each VCF file and apply the sed command separately
+    for file in !{chr_vcf}; do
+        # Reformat chromosome field, such as to have "chr" before number
+        sed '/^#/! s/^/chr/' "$file" > "${file%.vcf}_reformat.vcf"
+    done
+
+    # Loop over each VCF files
+    for file in *_reformat.vcf; do
+        # Compress VCF files using bgzip command and create index with tabix
+        bgzip "$file" && tabix -p vcf "$file.gz";
+    done
     '''
 }
 
