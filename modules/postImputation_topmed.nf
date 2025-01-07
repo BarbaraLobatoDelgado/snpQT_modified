@@ -10,6 +10,9 @@ process unzip_chr_files {
 
     script:
     """
-    unzip ${topmed_results_dir}/chr_*.zip -P ${params.topmed_password}
+    echo "topmed_results_dir: ${topmed_results_dir}"
+    echo "Checking files in ${topmed_results_dir}:"
+    ls ${topmed_results_dir}
+    unzip -P "${params.topmed_password}" ${topmed_results_dir}/chr_*.zip 
     """
 }
