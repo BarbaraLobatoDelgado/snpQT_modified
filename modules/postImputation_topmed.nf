@@ -13,6 +13,12 @@ process unzip_chr_files {
     echo "topmed_results_dir: ${topmed_results_dir}"
     echo "Checking files in ${topmed_results_dir}:"
     ls ${topmed_results_dir}
-    unzip -P "${params.topmed_password}" ${topmed_results_dir}/chr_*.zip 
+    # chmod 777 ${topmed_results_dir}/chr_*.zip
+    # unzip -P "${params.topmed_password}" ${topmed_results_dir}/chr_*.zip 
+
+    for zip_file in ${topmed_results_dir}/chr_*.zip; do
+        echo "Unzipping: \$zip_file"
+        unzip -P '${params.topmed_password}' \$zip_file
+    done
     """
 }
