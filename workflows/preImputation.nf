@@ -39,7 +39,7 @@ workflow preImputation {
     // fix_duplicates(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam)
 
     // Prepare files for local imputation
-    if (params.pre_impute == true && params.pre_impute_TOPMed == false) {
+    if (params.pre_impute == true && params.TOPMed_imputation == false) {
       // Run SNPflip
       run_snpflip(set_chrom_code.out.bed, set_chrom_code.out.bim, set_chrom_code.out.fam, g37, g38)
       flip_snps(ch_bed, ch_bim, ch_fam, run_snpflip.out.rev, run_snpflip.out.ambig)
@@ -68,7 +68,7 @@ workflow preImputation {
     }
 
     // Prepare files for TOPMed imputation server 
-    if (params.pre_impute == true && params.pre_impute_TOPMed == true) {
+    if (params.pre_impute == true && params.TOPMed_imputation == true) {
       // Remove duplicated SNPs
       fix_duplicates(set_chrom_code.out.bed, set_chrom_code.out.bim, set_chrom_code.out.fam)
       // Not necessary to run SNPflip because McCarthy Group Tools takes care of it

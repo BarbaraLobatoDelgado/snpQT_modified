@@ -16,6 +16,9 @@
   
   # output parameters ----------------------------------------------------------
   results: 'results/'
+
+  # Directory containing files imputed in TOPMed server
+  topmed_imputation_results: 'TOPMed_imputation_results/imputation_results/'
   
   # workflow parameters --------------------------------------------------------
 
@@ -42,10 +45,12 @@
   # Coding of chromosomes
   # Passed to set_chrom_code() in imputation.nf and flip_snps() in popStrat.nf to indicate how to code chromosomes
   output_chr: 26
-  # pre-Imputation QC workflow branch for TOPMed imputation server
-  pre_impute_TOPMed: true
+
   # post-Imputation QC workflow
   post_impute: false
+  # If imputation will be done in TOPMed server, run pre- ad post-imputation QC workflow branch 
+  topmed_imputation: true
+  
   # GWAS workflow
   gwas: false
   # Download and prepare a core database passing "core"
@@ -144,6 +149,10 @@
   linear: false
 
   # imputation parameters ------------------------------------------------------
+
+  # If imputation was done in TOPMed server, provide password given by server
+  # This is sent to an email
+  topmed_password: ''
   
   # 128GB memory per chrom, controls the number of chromosomes that are imputed
   # at the same time.  cluster profile ignores this because it queues jobs in

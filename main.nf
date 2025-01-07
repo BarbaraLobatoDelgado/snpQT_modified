@@ -13,6 +13,7 @@ include {variant_qc} from './workflows/variant_qc.nf'
 include {pop_strat} from './workflows/popStrat.nf'
 include {imputation} from './workflows/imputation.nf'
 include {postImputation} from './workflows/postImputation.nf'
+include {postImputation_topmed} from './workflows/postImputation_topmed.nf'
 include {preImputation} from './workflows/preImputation.nf'
 include {gwas} from './workflows/gwas.nf'
 include {download_core} from './workflows/download_db.nf'
@@ -199,15 +200,21 @@ workflow {
         .set{ ch_fam }
   }
   
-  if (params.post_impute) {
+  // Run post-imputation QC for local imputation
+  if (params.post_impute && !params.topmed_imputation) {
 	Channel
 	  .fromPath(params.fam, checkIfExists: true)
 	  .set{ ch_fam }
 	Channel
 	  .fromPath(params.vcf, checkIfExists: true)
 	  .set{ ch_imp }
+  // Run post-imputation QC for imputation in TOPMed server
+  } else if (params.post_impute && params.topmed_imputation) {
+    Channel
+    .fromPath(params.topmed_imputation_results, checkIfExists: true)
+    .set { topmed_results_dir }
   }
-
+  
   main:
     if ( params.download_db == "core" ) {
       download_core()
@@ -218,10 +225,10 @@ workflow {
     // workflow with build conversion
     if ( params.convert_build) {
       buildConversion(ch_vcf, ch_fam)
-      if ( params.qc && ! params.pop_strat) {
+      if ( params.qc && ! params.pop_strat ) {
         sample_qc(buildConversion.out.bed, buildConversion.out.bim, buildConversion.out.fam)
         variant_qc(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
-      } else if ( params.qc && params.pop_strat) {
+      } else if ( params.qc && params.pop_strat ) {
         sample_qc(buildConversion.out.bed, buildConversion.out.bim, buildConversion.out.fam)
         pop_strat(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
         variant_qc(pop_strat.out.bed, pop_strat.out.bim, pop_strat.out.fam)
@@ -258,20 +265,25 @@ workflow {
         preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
       }
       // local imputation 
-      if ( params.impute ) {
+      if ( params.impute && !params.topmed_imputation) {
 	    preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
         imputation(preImputation.out.vcf)
         postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
         if ( params.gwas ) {
           gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
-        } 
+        }
+      // Run GWAS without imputation
       } else if ( !params.impute && params.gwas && params.qc ) {
         gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
       }
     }
 	
-	// post-imputation workflow
-	if ( params.post_impute ) {
-        postImputation(ch_imp, ch_fam) 
-	}
+	
+  
+  // post-imputation workflow for local imputation
+	if ( params.post_impute && !params.topmed_imputation ) {
+    postImputation(ch_imp, ch_fam)
+	} else if ( params.post_impute && params.topmed_imputation ) {
+    postImputation_topmed(topmed_results_dir)
+  }
 }
