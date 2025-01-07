@@ -1,4 +1,4 @@
-// Post-imputation QC workflow
+// Post-imputation QC workflow after imputation in TOPMed server
 nextflow.enable.dsl = 2
 
 // import modules
@@ -11,16 +11,24 @@ nextflow.enable.dsl = 2
 // include {update_phenotype} from '../modules/postImputation.nf' // H7
 // include {parse_logs} from '../modules/qc.nf' // E13
 
-include {unzip_chr_files} from '../modules/postImputation_topmed.nf'
+include {unzip_vcfs} from '../modules/postImputation_topmed.nf'
+// include {gunzip_vcf_files} from '../modules/postImputation_topmed.nf'
+include {convert_vcfs_to_plink} from '../modules/postImputation_topmed.nf'
+include {merge_plink_files} from '../modules/postImputation_topmed.nf'
 
 workflow postImputation_topmed {
   take:
   topmed_results_dir
 
   main:
-  unzip_chr_files(topmed_results_dir)
+  unzip_vcfs(topmed_results_dir)
+  // gunzip_vcf_files(unzip_vcfs.out.dose)
+  convert_vcfs_to_plink(unzip_vcfs.out.vcf)
+  merge_plink_files(convert_vcfs_to_plink.out.bim, convert_vcfs_to_plink.out.bed, convert_vcfs_to_plink.out.fam)
 
-  emit:
-  extracted_files_dose = unzip_chr_files.out.dose
-  extracted_files_info = unzip_chr_files.out.info
+
+
+  // emit:
+  // extracted_files_dose = unzip_vcfs.out.dose
+  // extracted_files_info = unzip_vcfs.out.info
 }
