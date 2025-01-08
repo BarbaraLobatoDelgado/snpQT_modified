@@ -69,21 +69,28 @@ process merge_plink_files {
     path(bed)
     path(fam)
 
-    // output:
-    // path "dataset.bim", emit: bim
-    // path "dataset.bed", emit: bed
-    // path "dataset.fam", emit: fam
+    output:
+    path "merged_dataset.bim", emit: bim
+    path "merged_dataset.bed", emit: bed
+    path "merged_dataset.fam", emit: fam
 
     script:
     """
     echo "Creating list of files to be merged..."
-    sorted_files=\$(echo ${bim.baseName} | tr -d '[]' | tr ' ' '\n' | sort -V)
+    sorted_files=\$(echo ${bim.baseName} | tr -d '[:space:][]' | tr ',' '\n' | sort -V) 
     echo "\$sorted_files" >> list_sorted_files.txt
 
+    echo "Identify first file to be merged..."
+    first_file=\$(head -n 1 list_sorted_files.txt)
+    echo "First file is: \$first_file"
+
     echo "Merging all PLINK files into one..."
-    for file in list_sorted_files.txt; do
-        echo \$file 
-    done
+    plink --bfile \$first_file --merge-list list_sorted_files.txt --make-bed --out merged_dataset
+
+
+    #for file in list_sorted_files.txt; do
+    #    echo \$file 
+    #done
     
 
     # for i in {1..22}; do
