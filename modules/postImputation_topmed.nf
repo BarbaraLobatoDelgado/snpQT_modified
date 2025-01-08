@@ -45,9 +45,9 @@ process convert_vcfs_to_plink {
     path(vcf)
 
     output:
-    path "G_chr*.bim", emit: bim 
-    path "G_chr*.bed", emit: bed
-    path "G_chr*.fam", emit: fam
+    path "chr*.bim", emit: bim 
+    path "chr*.bed", emit: bed
+    path "chr*.fam", emit: fam
 
     script:
     """
@@ -55,7 +55,7 @@ process convert_vcfs_to_plink {
     for vcf_file in ${vcf}; do
         # Get VCF base name
         # base_name=\$(basename \$vcf_file .dose.vcf)
-        plink --vcf \$vcf_file --make-bed --out G_\$(basename \$vcf_file .dose.vcf.gz) --const-fid
+        plink --vcf \$vcf_file --make-bed --out \$(basename \$vcf_file .dose.vcf.gz) --const-fid
     done
     """
 }
@@ -69,18 +69,29 @@ process merge_plink_files {
     path(bed)
     path(fam)
 
-    output:
-    path "G3.bim", emit: bim
-    path "G3.bed", emit: bed
-    path "G3.fam", emit: fam
+    // output:
+    // path "dataset.bim", emit: bim
+    // path "dataset.bed", emit: bed
+    // path "dataset.fam", emit: fam
 
     script:
     """
     echo "Merging all PLINK files into one"
-    for file in ls ${bim.baseName}; do
-        \$file > plink_merge_list.txt
+    sorted_files=\$(echo ${bim.baseName} | tr -d '[]' | tr ' ' '\n' | sort -V)
+
+    echo "Sorted .bed files:"
+    echo "\$sorted_files" >> list_sorted_files.txt
+
+
+
+
+    for file in ${bim.baseName}; do
+        echo \$file >> plink_merge_list.txt
     done
-    echo plink_merge_list.txt
+    sort -V plink_merge_list.txt | echo
+
+    # for i in {1..22}; do
+
 
     # Change IDs and add info from oncoth2.fam in ./
     """
