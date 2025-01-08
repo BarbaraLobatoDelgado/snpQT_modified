@@ -37,7 +37,24 @@ process unzip_vcfs {
 //     """
 // }
 
-// STEP 2: convert files to PLINK format and join them all
+// STEP 2a: join all VCFs into one
+process merge_vcfs {
+    label 'bcftools'
+
+    input:
+    path(vcf)
+
+    output:
+    path "merged.vcf.gz", emit: vcf_gz
+
+    script:
+    """
+    # Merge the sorted VCF files using bcftools merge
+    bcftools merge -o merged.vcf.gz -O z ${vcf.join(' ')}
+    """
+}
+
+// STEP 2b: convert files to PLINK format and join them all
 process convert_vcfs_to_plink {
     label 'plink1'
 
@@ -77,23 +94,22 @@ process merge_plink_files {
     script:
     """
     echo "Creating list of files to be merged..."
+    # Remove parentheses and blank spaces, and add new line after comma
     sorted_files=\$(echo ${bim.baseName} | tr -d '[:space:][]' | tr ',' '\n' | sort -V) 
     echo "\$sorted_files" >> list_sorted_files.txt
 
+    # Get first line from list (normally chr1)
     echo "Identify first file to be merged..."
     first_file=\$(head -n 1 list_sorted_files.txt)
     echo "First file is: \$first_file"
 
+    # Create new file with the rest of files to be merged
+    echo "Remove first line from list"
+    tail -n +2 list_sorted_files.txt >> list_sorted_files_except_first.txt
+
+    # Unify all in PLINK format
     echo "Merging all PLINK files into one..."
-    plink --bfile \$first_file --merge-list list_sorted_files.txt --make-bed --out merged_dataset
-
-
-    #for file in list_sorted_files.txt; do
-    #    echo \$file 
-    #done
-    
-
-    # for i in {1..22}; do
+    plink --bfile \$first_file --merge-list list_sorted_files_except_first.txt --make-bed --out merged_dataset
 
 
     # Change IDs and add info from oncoth2.fam in ./
