@@ -76,19 +76,15 @@ process merge_plink_files {
 
     script:
     """
-    echo "Merging all PLINK files into one"
+    echo "Creating list of files to be merged..."
     sorted_files=\$(echo ${bim.baseName} | tr -d '[]' | tr ' ' '\n' | sort -V)
-
-    echo "Sorted .bed files:"
     echo "\$sorted_files" >> list_sorted_files.txt
 
-
-
-
-    for file in ${bim.baseName}; do
-        echo \$file >> plink_merge_list.txt
+    echo "Merging all PLINK files into one..."
+    for file in list_sorted_files.txt; do
+        echo \$file 
     done
-    sort -V plink_merge_list.txt | echo
+    
 
     # for i in {1..22}; do
 
