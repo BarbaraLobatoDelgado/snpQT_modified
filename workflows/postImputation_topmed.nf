@@ -13,6 +13,7 @@ include {parse_logs} from '../modules/qc.nf' // E13
 
 include {unzip_vcfs} from '../modules/postImputation_topmed.nf'
 // include {gunzip_vcf_files} from '../modules/postImputation_topmed.nf'
+include {create_tbi_files} from '../modules/postImputation_topmed.nf'
 include {merge_vcfs} from '../modules/postImputation_topmed.nf'
 include {convert_vcfs_to_plink} from '../modules/postImputation_topmed.nf'
 include {merge_plink_files} from '../modules/postImputation_topmed.nf'
@@ -23,12 +24,14 @@ workflow postImputation_topmed {
 
   main:
   unzip_vcfs(topmed_results_dir)
-  merge_vcfs(unzip_vcfs.out.vcf)
+  create_tbi_files(unzip_vcfs.out.vcf)
+  merge_vcfs(create_tbi_files.out.csi)
+  
   // gunzip_vcf_files(unzip_vcfs.out.dose)
   // convert_vcfs_to_plink(unzip_vcfs.out.vcf)
   // merge_plink_files(convert_vcfs_to_plink.out.bim, convert_vcfs_to_plink.out.bed, convert_vcfs_to_plink.out.fam)
   // filter_imp(convert_vcfs_to_plink.out.bim, convert_vcfs_to_plink.out.bed, convert_vcfs_to_plink.out.fam)
-  filter_imp(merge_vcfs.out.vcf_gz)
+  // filter_imp(merge_vcfs.out.vcf_gz)
 
 
 

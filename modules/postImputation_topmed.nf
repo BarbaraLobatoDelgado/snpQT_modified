@@ -37,6 +37,28 @@ process unzip_vcfs {
 //     """
 // }
 
+// STEP 2a: create indices files
+process create_tbi_files {
+    label 'bcftools'
+
+    input:
+    path(vcf)
+
+    output:
+    path "chr*.dose.vcf.gz.csi", emit: csi
+
+    script:
+    """
+    # Create index
+    for file in ${vcf.join(' ')}; do
+        if [[ ! -f "\${file}.tbi" ]]; then
+            echo "Indexing \${file}..."
+            bcftools index \${file}
+        fi
+    done
+    """
+}
+
 // STEP 2a: join all VCFs into one
 process merge_vcfs {
     label 'bcftools'
@@ -49,10 +71,26 @@ process merge_vcfs {
 
     script:
     """
+    # Create index
+    # for file in ${vcf.join(' ')}; do
+    #     if [[ ! -f "\${file}.tbi" ]]; then
+    #         echo "Indexing \${file}..."
+    #         bcftools index \${file}
+    #     fi
+    # done
+
     # Merge the sorted VCF files using bcftools merge
+    # Use --force-samples to avoid error of duplicated IDs
     bcftools merge -o merged.vcf.gz -O z ${vcf.join(' ')}
+
+    # Sort VCF file by chromosome and position
+    # bcftools sort merged.vcf.gz -O z -o sorted_merged.vcf.gz
     """
 }
+
+// STEP 2b: sort VCF files by chromosome and position
+
+
 
 // STEP 2b: convert files to PLINK format and join them all
 process convert_vcfs_to_plink {
