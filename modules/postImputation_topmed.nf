@@ -59,23 +59,6 @@ process create_tbi_files {
     """
 }
 
-// STEP 2b: create list of files to be merged
-process create_list_files {
-
-    input:
-    path(vcf)
-
-    output:
-    path "list_sorted_files.txt", emit: list_sorted_files
-
-    script:
-    """
-    # Create list of files in the correct order
-    echo "Creating list of files to be merged..."
-    # Remove parentheses and blank spaces, and add new line after comma
-    echo ${vcf} | tr ' ' '\n' | cut -d '.' -f 1 | sort -V > list_sorted_files.txt
-    """
-}
 
 // STEP 2a: join all VCFs into one
 process concat_vcfs {
@@ -84,21 +67,18 @@ process concat_vcfs {
     input:
     path(csi)
     path(vcf)
-    path(list_sorted_files)
+    // path(list_sorted_files)
 
-    // output:
-    // path "concat.vcf.gz", emit: concat_vcf
+    output:
+    path "concat.vcf.gz", emit: concat_vcf
 
     script:
     """
-    echo ${vcf}
-    #echo ${vcf} | tr ' ' '\\n' | awk -F'.' '{print \$1,\$0}' | sort -k1,1n | cut -d ' ' -f2 >> list_vcfs.txt
-    echo ${vcf} | tr ' ' '\\n' | sed 's/chr\\([0-9]*\\)/\\1 \\0/' | sort -k1,1n | cut -d ' ' -f2 > list_sorted_vcfs.txt
+    # Create list with VCFs in the order they should be concatenated
+    echo ${vcf} | tr ' ' '\\n' | sort -V > list_sorted_vcfs.txt
     
-   
-
     # Merge the sorted VCF files using bcftools merge
-    #bcftools concat --file-list full_path_list.txt -o concat.vcf.gz -O z 
+    bcftools concat --file-list list_sorted_vcfs.txt -o concat.vcf.gz -O z 
 
     # Sort VCF file by chromosome and position
     # bcftools sort concat.vcf.gz -O z -o sorted_concat.vcf.gz
