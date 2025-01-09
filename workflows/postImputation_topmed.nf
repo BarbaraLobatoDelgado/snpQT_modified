@@ -25,8 +25,8 @@ workflow postImputation_topmed {
   main:
   unzip_vcfs(topmed_results_dir)
   create_tbi_files(unzip_vcfs.out.vcf)
-  merge_vcfs(create_tbi_files.out.csi)
-  
+  merge_vcfs(create_tbi_files.out.csi, unzip_vcfs.out.vcf)
+
   // gunzip_vcf_files(unzip_vcfs.out.dose)
   // convert_vcfs_to_plink(unzip_vcfs.out.vcf)
   // merge_plink_files(convert_vcfs_to_plink.out.bim, convert_vcfs_to_plink.out.bed, convert_vcfs_to_plink.out.fam)
