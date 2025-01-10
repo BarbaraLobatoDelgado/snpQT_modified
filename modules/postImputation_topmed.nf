@@ -37,8 +37,8 @@ process unzip_vcfs {
 //     """
 // }
 
-// STEP 2a: create indices files
-process create_tbi_files {
+// STEP 2: create indices files
+process create_index {
     label 'bcftools'
 
     input:
@@ -60,14 +60,13 @@ process create_tbi_files {
 }
 
 
-// STEP 2a: join all VCFs into one
+// STEP 3: join all VCFs into one
 process concat_vcfs {
-    label 'bcftools'
+    label 'bcftools1_5'
 
     input:
     path(csi)
     path(vcf)
-    // path(list_sorted_files)
 
     output:
     path "concat.vcf.gz", emit: concat_vcf
@@ -79,75 +78,88 @@ process concat_vcfs {
     
     # Merge the sorted VCF files using bcftools merge
     bcftools concat --file-list list_sorted_vcfs.txt -o concat.vcf.gz -O z 
-
-    # Sort VCF file by chromosome and position
-    # bcftools sort concat.vcf.gz -O z -o sorted_concat.vcf.gz
     """
 }
 
-// STEP 2b: sort VCF files by chromosome and position
-
-
-
-// STEP 2b: convert files to PLINK format and join them all
-process convert_vcfs_to_plink {
-    label 'plink1'
+// STEP 4: sort VCF files by chromosome and position
+process sort_vcf {
+    label 'bcftools'
 
     input:
     path(vcf)
 
     output:
-    path "chr*.bim", emit: bim 
-    path "chr*.bed", emit: bed
-    path "chr*.fam", emit: fam
+    path "sorted.vcf.gz", emit: sorted_vcf 
 
     script:
     """
-    echo ${vcf}
-    for vcf_file in ${vcf}; do
-        # Get VCF base name
-        # base_name=\$(basename \$vcf_file .dose.vcf)
-        plink --vcf \$vcf_file --make-bed --out \$(basename \$vcf_file .dose.vcf.gz) --const-fid
-    done
+    echo bcftools --version
+    # Sort VCF file by chromosome and position
+    bcftools sort ${vcf} -O z -o sorted.vcf.gz
     """
 }
 
-// STEP 3: merge all chromosomes into one plink file
-process merge_plink_files {
-    label 'plink1'
-
-    input:
-    path(bim)
-    path(bed)
-    path(fam)
-
-    output:
-    path "merged_dataset.bim", emit: bim
-    path "merged_dataset.bed", emit: bed
-    path "merged_dataset.fam", emit: fam
-
-    script:
-    """
-    echo "Creating list of files to be merged..."
-    # Remove parentheses and blank spaces, and add new line after comma
-    sorted_files=\$(echo ${bim.baseName} | tr -d '[:space:][]' | tr ',' '\n' | sort -V) 
-    echo "\$sorted_files" >> list_sorted_files.txt
-
-    # Get first line from list (normally chr1)
-    echo "Identify first file to be merged..."
-    first_file=\$(head -n 1 list_sorted_files.txt)
-    echo "First file is: \$first_file"
-
-    # Create new file with the rest of files to be merged
-    echo "Remove first line from list"
-    tail -n +2 list_sorted_files.txt >> list_sorted_files_except_first.txt
-
-    # Unify all in PLINK format
-    echo "Merging all PLINK files into one..."
-    plink --bfile \$first_file --merge-list list_sorted_files_except_first.txt --make-bed --out merged_dataset
 
 
-    # Change IDs and add info from oncoth2.fam in ./
-    """
+// // STEP 2b: convert files to PLINK format and join them all
+// process convert_vcfs_to_plink {
+//     label 'plink1'
 
-}
+//     input:
+//     path(vcf)
+
+//     output:
+//     path "chr*.bim", emit: bim 
+//     path "chr*.bed", emit: bed
+//     path "chr*.fam", emit: fam
+
+//     script:
+//     """
+//     echo ${vcf}
+//     for vcf_file in ${vcf}; do
+//         # Get VCF base name
+//         # base_name=\$(basename \$vcf_file .dose.vcf)
+//         plink --vcf \$vcf_file --make-bed --out \$(basename \$vcf_file .dose.vcf.gz) --const-fid
+//     done
+//     """
+// }
+
+// // STEP 3: merge all chromosomes into one plink file
+// process merge_plink_files {
+//     label 'plink1'
+
+//     input:
+//     path(bim)
+//     path(bed)
+//     path(fam)
+
+//     output:
+//     path "merged_dataset.bim", emit: bim
+//     path "merged_dataset.bed", emit: bed
+//     path "merged_dataset.fam", emit: fam
+
+//     script:
+//     """
+//     echo "Creating list of files to be merged..."
+//     # Remove parentheses and blank spaces, and add new line after comma
+//     sorted_files=\$(echo ${bim.baseName} | tr -d '[:space:][]' | tr ',' '\n' | sort -V) 
+//     echo "\$sorted_files" >> list_sorted_files.txt
+
+//     # Get first line from list (normally chr1)
+//     echo "Identify first file to be merged..."
+//     first_file=\$(head -n 1 list_sorted_files.txt)
+//     echo "First file is: \$first_file"
+
+//     # Create new file with the rest of files to be merged
+//     echo "Remove first line from list"
+//     tail -n +2 list_sorted_files.txt >> list_sorted_files_except_first.txt
+
+//     # Unify all in PLINK format
+//     echo "Merging all PLINK files into one..."
+//     plink --bfile \$first_file --merge-list list_sorted_files_except_first.txt --make-bed --out merged_dataset
+
+
+//     # Change IDs and add info from oncoth2.fam in ./
+//     """
+
+// }
