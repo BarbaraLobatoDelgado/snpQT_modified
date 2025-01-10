@@ -131,17 +131,46 @@ process duplicates_cat3 {
           --exclude merged_variants.txt \
           --make-bed \
           --out excluded_snps
-      plink --bfile merged_snps \
+    else
+      plink -bfile !{bim.baseName} \
+          --make-bed \
+          --out H5
+    fi
+    '''
+}
+
+// STEP H5: Identify and remove merged variants
+process duplicates_cat4 {
+    label 'plink2'
+ 
+    input:
+    path(bed)
+    path(bim)
+    path(fam)
+
+    output:
+    path "H5.bed", emit: bed
+    path "H5.bim", emit: bim
+    path "H5.fam", emit: fam
+    path "H5.log", emit: log 
+    
+    shell:
+    '''
+    cut -f 2 !{bim} | sort | uniq -d > merged_variants.txt
+
+    if [[ $(wc -l < merged_variants.txt) -gt 0 ]]
+    then
+      plink2 --bfile merged_snps \
           --set-all-var-ids @:#:\\$r:\\$a \
-          --new-id-max-allele-len 300 missing\
+          --new-id-max-allele-len 300 \
           --make-bed \
           --out annotated
-      plink --bfile excluded_snps \
+      plink2 --bfile excluded_snps \
           --bmerge annotated \
           --make-bed \
           --out H5   
     else
-      plink -bfile !{bim.baseName} \
+      plink2 -bfile !{bim.baseName} \
           --make-bed \
           --out H5
     fi

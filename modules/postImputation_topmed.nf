@@ -99,7 +99,27 @@ process sort_vcf {
     """
 }
 
+// STEP 5: Convert vcf to binary plink files and filter all poorly imputed variants based on R2 score
+process filter_imp_quality_topmed {
+    label 'plink2'
+	
+    input:
+    path(imp)
 
+    output:
+    path "H1.bed", emit: bed
+    path "H1.bim", emit: bim
+    path "H1.fam", emit: fam
+    path "H1.log", emit: log
+    
+    shell:
+    '''
+    plink2 --vcf !{imp} \
+        --extract-if-info R2 '>'= !{params.r2} \
+        --make-bed \
+        --out H1
+    '''
+}
 
 // // STEP 2b: convert files to PLINK format and join them all
 // process convert_vcfs_to_plink {

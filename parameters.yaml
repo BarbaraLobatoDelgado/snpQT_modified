@@ -165,6 +165,11 @@
   # change the info score which expresses the quality of imputation per marker
   # accepted range: 0-1
   info: 0.7
+
+  # change the R2 metric, which expresses the quality of imputation per marker
+  # when using TOPMed imputation server
+  # accepted range: 0-1
+  r2: 0.7
   
   # change the Minor Allele Frequency threshold in post-Imputation QC
   # accepted range: 0-1
