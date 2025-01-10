@@ -112,10 +112,11 @@ process duplicates_cat3 {
     path(fam)
 
     output:
-    path "H5.bed", emit: bed
-    path "H5.bim", emit: bim
-    path "H5.fam", emit: fam
-    path "H5.log", emit: log 
+    path "H5a.bed", emit: bed
+    path "H5a.bim", emit: bim
+    path "H5a.fam", emit: fam
+    path "H5a.log", emit: log 
+    path "merge" ...
     
     shell:
     '''
@@ -134,7 +135,7 @@ process duplicates_cat3 {
     else
       plink -bfile !{bim.baseName} \
           --make-bed \
-          --out H5
+          --out H5a
     fi
     '''
 }
@@ -149,10 +150,10 @@ process duplicates_cat4 {
     path(fam)
 
     output:
-    path "H5.bed", emit: bed
-    path "H5.bim", emit: bim
-    path "H5.fam", emit: fam
-    path "H5.log", emit: log 
+    path "H5b.bed", emit: bed
+    path "H5b.bim", emit: bim
+    path "H5b.fam", emit: fam
+    path "H5b.log", emit: log 
     
     shell:
     '''
@@ -172,7 +173,7 @@ process duplicates_cat4 {
     else
       plink2 -bfile !{bim.baseName} \
           --make-bed \
-          --out H5
+          --out H5b
     fi
     '''
 }
