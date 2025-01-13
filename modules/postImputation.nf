@@ -112,11 +112,10 @@ process duplicates_cat3 {
     path(fam)
 
     output:
-    path "H5a.bed", emit: bed
-    path "H5a.bim", emit: bim
-    path "H5a.fam", emit: fam
-    path "H5a.log", emit: log 
-    // path "merge" ...
+    path "H5.bed", emit: bed
+    path "H5.bim", emit: bim
+    path "H5.fam", emit: fam
+    path "H5.log", emit: log 
 
     // # --set-all-var-ids @:#:\\$r:\\$a \
     
@@ -140,62 +139,26 @@ process duplicates_cat3 {
           --exclude merged_variants.txt \
           --make-bed \
           --out excluded_snps
-      # Create plink files where unnamed variants have new IDs as chr:position:REF:ALT
+      # Create plink files where unnamed variants have new IDs as chrnumber:position:REF:ALT
       plink --bfile merged_snps \
-          --set-missing-var-ids @:#:\\$1:\\$2 \
+          --set-missing-var-ids chr@:#:\\$1:\\$2 \
           --new-id-max-allele-len 300 \
           --make-bed \
           --out annotated
+      # Merge plink files with SNPs with rsIDs and SNPs whose ID is chr:pos:ref:alt
       plink --bfile excluded_snps \
           --bmerge annotated \
           --make-bed \
-          --out H5a
-    # If there are no duplicated SNPs, generate plink files with different name
+          --out H5
+    # If there are no duplicated SNPs, generate plink files with same name (final output must have same name)
     else
       plink --bfile !{bim.baseName} \
           --make-bed \
-          --out H5a
+          --out H5
     fi
     '''
 }
 
-// STEP H5: Identify and remove merged variants
-process duplicates_cat4 {
-    label 'plink2'
- 
-    input:
-    path(bed)
-    path(bim)
-    path(fam)
-
-    output:
-    path "H5b.bed", emit: bed
-    path "H5b.bim", emit: bim
-    path "H5b.fam", emit: fam
-    path "H5b.log", emit: log 
-    
-    shell:
-    '''
-    cut -f 2 !{bim} | sort | uniq -d > merged_variants.txt
-
-    if [[ $(wc -l < merged_variants.txt) -gt 0 ]]
-    then
-      plink2 --bfile merged_snps \
-          --set-all-var-ids @:#:\\$r:\\$a \
-          --new-id-max-allele-len 300 \
-          --make-bed \
-          --out annotated
-      plink2 --bfile excluded_snps \
-          --bmerge annotated \
-          --make-bed \
-          --out H5   
-    else
-      plink2 -bfile !{bim.baseName} \
-          --make-bed \
-          --out H5b
-    fi
-    '''
-}
 
 // STEP H6: update ids information
 process update_ids {    
