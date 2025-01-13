@@ -116,24 +116,41 @@ process duplicates_cat3 {
     path "H5a.bim", emit: bim
     path "H5a.fam", emit: fam
     path "H5a.log", emit: log 
-    path "merge" ...
+    // path "merge" ...
     
     shell:
     '''
+    # Get rsIDs, sort them and save repeated SNPs
     cut -f 2 !{bim} | sort | uniq -d > merged_variants.txt
 
+    # Count number of lines in merged_variants.txt
+    # If there are any lines (i.e. duplicated variants), then run plink commands
+    # Note: there are variants with no rsID, noted as ".". These are found as duplicates in many analyses. Not certain if they should be removed.
     if [[ $(wc -l < merged_variants.txt) -gt 0 ]]
     then
+      # Create plink files with duplicated rsID variants (most have rsID of .)
       plink --bfile !{bim.baseName} \
           --extract merged_variants.txt \
           --make-bed \
           --out merged_snps
+      # Create plink files with all SNPs after excluding those with same rsID
       plink --bfile !{bim.baseName} \
           --exclude merged_variants.txt \
           --make-bed \
           --out excluded_snps
+      # Create plink files with duplicated rsID variants, changing their IDs to be ??
+      plink --bfile merged_snps \
+          --set-all-var-ids @:#:\\$r:\\$a \
+          --new-id-max-allele-len 300 missing\
+          --make-bed \
+          --out annotated
+      plink --bfile excluded_snps \
+          --bmerge annotated \
+          --make-bed \
+          --out H5a
+    # If there are no duplicated SNPs, generate plink files with different name
     else
-      plink -bfile !{bim.baseName} \
+      plink --bfile !{bim.baseName} \
           --make-bed \
           --out H5a
     fi
