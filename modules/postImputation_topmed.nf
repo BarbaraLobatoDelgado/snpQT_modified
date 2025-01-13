@@ -99,6 +99,29 @@ process sort_vcf {
     """
 }
 
+// STEP 6: remove "0_" substring from IDs (added during TOPMed imputation)
+process trim_ids {
+    label 'bcftools1_5'
+
+    input:
+    path(vcf)
+
+    output:
+    path "correct_ids.vcf.gz", emit: correct_ids_vcf 
+
+    shell:
+    '''
+    # Get old IDs
+    bcftools query -l !{vcf} > old_ids.txt
+    # Remove substring
+    sed 's/^0_//g' old_ids.txt > new_ids.txt
+    # Create file with old and new IDs, each in a column
+    paste old_ids.txt new_ids.txt > ids_mapping.txt
+    # Change IDs in VCF
+    bcftools reheader -s ids_mapping.txt -o correct_ids.vcf.gz !{vcf}
+    '''
+}
+
 // STEP 5: Convert vcf to binary plink files and filter all poorly imputed variants based on R2 score
 process filter_imp_quality_topmed {
     label 'plink2'
@@ -121,27 +144,7 @@ process filter_imp_quality_topmed {
     '''
 }
 
-// STEP 6: remove "0_" substring from IDs (added during TOPMed imputation)
-process trim_ids {
-    label 'plink1'
 
-    input:
-    path(bed)
-    path(bim)
-    path(fam)
-
-    output:
-    // path "H2.bed", emit: bed
-    // path "H2.bim", emit: bim
-    path "H2.fam", emit: fam
-    // path "H2.log", emit: log
-
-    shell:
-    '''
-    # plink --bfile !{bim.baseName} --freq --out H2
-    awk '{print $1, $2, $3, $4, $5, $6}' !{fam} | sed 's/^0_//g' > H2.fam
-    '''
-}
 
 // // STEP 2b: convert files to PLINK format and join them all
 // process convert_vcfs_to_plink {
