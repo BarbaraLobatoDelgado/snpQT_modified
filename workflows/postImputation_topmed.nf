@@ -39,7 +39,7 @@ workflow postImputation_topmed {
   update_phenotype(duplicates_cat3.out.bed, duplicates_cat3.out.bim, duplicates_cat3.out.fam, qc_fam)
   // Logs
   logs = filter_imp_quality_topmed.out.log.concat(filter_maf.out.log, duplicates_cat1.out.log, duplicates_cat2.out.log, duplicates_cat3.out.log, update_phenotype.out.log).collect()
-  parse_logs("post_imputation_topmed", logs, "post_impute_topmed_log.txt")
+  parse_logs("post_imputation", logs, "post_impute_log.txt")
 
   emit:
   bed = update_phenotype.out.bed

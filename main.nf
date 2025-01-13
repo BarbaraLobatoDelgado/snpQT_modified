@@ -24,7 +24,7 @@ if (params.help) {
   System.exit(0)
 }
 
-if (!params.convert_build && !params.qc && !params.pop_strat && !params.impute && !params.gwas && !params.download_db && !params.pre_impute && !params.post_impute) {
+if (!params.convert_build && !params.qc && !params.pop_strat && !params.impute && !params.gwas && !params.download_db && !params.pre_impute && !params.post_impute && !params.topmed_imputation) {
   println """
   =================================================================
   snpQT is ready to make your single-nucleotide polymorphisms cute!
@@ -163,7 +163,21 @@ if ( params.post_impute && params.qc){
     System.exit(1)	
 }
 
-if ( params.post_impute && params.gwas){
+// TOPMed imputation and associated parameters
+if ( params.post_impute && params.topmed_imputation && !params.topmed_imputation_results ) { 
+  println("if --topmed_imputation is true, --topmed_imputation_results must point to directory containing files downloaded from TOPMed imputation server")
+    println("Please, check --topmed_imputation and/or --topmed_imputation_results values")
+  println("Use --help to print help")
+    System.exit(1)
+} else if ( params.post_impute && !params.topmed_imputation && params.topmed_imputation_results ) {
+  println("if --topmed_imputation is false, --topmed_imputation_results must have empty value")
+    println("Please, check --topmed_imputation and/or --topmed_imputation_results values")
+  println("Use --help to print help")
+    System.exit(1)
+}
+
+// Local imputation and post-imputation QC incompatible with GWAS
+if ( params.post_impute && !params.topmed_imputation && params.gwas){
 	println("--post_impute is not combined with --gwas")
     println("If you wish to run --qc please first run --post-impute alone, and then use the output binary plink files to run other snpQT workflows like --qc, --pop_strat and --gwas")
     println("Please rerun --post_impute providing only a --vcf and a --fam file ")
@@ -249,12 +263,21 @@ workflow {
 	    preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
             imputation(preImputation.out.vcf)
 		postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
-		if ( params.gwas ) {
+	
+    if ( params.gwas ) {
 			gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
 		}
       } else if ( !params.impute && params.gwas ) {
         gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
       }
+    }
+
+    // Post-imputation QC if TOPMed imputation and GWAS
+    // aquí!!
+    if (params.post_impute && params.topmed_imputation && gwas) {
+      // variant_qc()
+      postImputation_topmed(qc_fam, topmed_results_dir)
+      gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) // falta ?.out.covar
     }
 
     // workflow without build conversion
