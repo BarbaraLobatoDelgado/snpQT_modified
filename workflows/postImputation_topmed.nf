@@ -11,17 +11,14 @@ include {update_ids} from '../modules/postImputation.nf' // H6
 include {update_phenotype} from '../modules/postImputation.nf' // H7
 include {parse_logs} from '../modules/qc.nf' // E13
 
+// specific for TOPMed imputation
 include {unzip_vcfs} from '../modules/postImputation_topmed.nf'
-// include {gunzip_vcf_files} from '../modules/postImputation_topmed.nf'
 include {create_index} from '../modules/postImputation_topmed.nf'
 include {concat_vcfs} from '../modules/postImputation_topmed.nf'
 include {sort_vcf} from '../modules/postImputation_topmed.nf'
 include {trim_ids} from '../modules/postImputation_topmed.nf'
 include {filter_imp_quality_topmed} from '../modules/postImputation_topmed.nf'
 
-
-// include {convert_vcfs_to_plink} from '../modules/postImputation_topmed.nf'
-// include {merge_plink_files} from '../modules/postImputation_topmed.nf'
 
 workflow postImputation_topmed {
   take:
@@ -39,15 +36,13 @@ workflow postImputation_topmed {
   duplicates_cat1(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam)
   duplicates_cat2(duplicates_cat1.out.bed, duplicates_cat1.out.bim, duplicates_cat1.out.fam)
   duplicates_cat3(duplicates_cat2.out.bed, duplicates_cat2.out.bim, duplicates_cat2.out.fam)
-  // update_ids(duplicates_cat3.out.bed, duplicates_cat3.out.bim, duplicates_cat3.out.fam, qc_fam)
   update_phenotype(duplicates_cat3.out.bed, duplicates_cat3.out.bim, duplicates_cat3.out.fam, qc_fam)
-  
+  // Logs
+  logs = filter_imp_quality_topmed.out.log.concat(filter_maf.out.log, duplicates_cat1.out.log, duplicates_cat2.out.log, duplicates_cat3.out.log, update_phenotype.out.log).collect()
+  parse_logs("post_imputation_topmed", logs, "post_impute_topmed_log.txt")
 
-
-
-
-
-  // emit:
-  // extracted_files_dose = unzip_vcfs.out.dose
-  // extracted_files_info = unzip_vcfs.out.info
+  emit:
+  bed = update_phenotype.out.bed
+  bim = update_phenotype.out.bim
+  fam = update_phenotype.out.fam
 }
