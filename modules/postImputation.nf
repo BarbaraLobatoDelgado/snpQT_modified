@@ -117,6 +117,8 @@ process duplicates_cat3 {
     path "H5a.fam", emit: fam
     path "H5a.log", emit: log 
     // path "merge" ...
+
+    // # --set-all-var-ids @:#:\\$r:\\$a \
     
     shell:
     '''
@@ -124,8 +126,8 @@ process duplicates_cat3 {
     cut -f 2 !{bim} | sort | uniq -d > merged_variants.txt
 
     # Count number of lines in merged_variants.txt
-    # If there are any lines (i.e. duplicated variants), then run plink commands
-    # Note: there are variants with no rsID, noted as ".". These are found as duplicates in many analyses. Not certain if they should be removed.
+    # If there are any lines, then run plink commands
+    # Note: there are unnamed variants with no rsID, noted as ".", in merged_variants.txt
     if [[ $(wc -l < merged_variants.txt) -gt 0 ]]
     then
       # Create plink files with duplicated rsID variants (most have rsID of .)
@@ -138,10 +140,10 @@ process duplicates_cat3 {
           --exclude merged_variants.txt \
           --make-bed \
           --out excluded_snps
-      # Create plink files with duplicated rsID variants, changing their IDs to be ??
+      # Create plink files where unnamed variants have new IDs as chr:position:REF:ALT
       plink --bfile merged_snps \
-          --set-all-var-ids @:#:\\$r:\\$a \
-          --new-id-max-allele-len 300 missing\
+          --set-missing-var-ids @:#:\\$1:\\$2 \
+          --new-id-max-allele-len 300 \
           --make-bed \
           --out annotated
       plink --bfile excluded_snps \
