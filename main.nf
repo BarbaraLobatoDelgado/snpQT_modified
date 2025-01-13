@@ -202,17 +202,24 @@ workflow {
   
   // Run post-imputation QC for local imputation
   if (params.post_impute && !params.topmed_imputation) {
-	Channel
-	  .fromPath(params.fam, checkIfExists: true)
-	  .set{ ch_fam }
-	Channel
-	  .fromPath(params.vcf, checkIfExists: true)
-	  .set{ ch_imp }
+    // Original fam file
+    Channel
+      .fromPath(params.fam, checkIfExists: true)
+      .set{ ch_fam }
+    // VCF from local imputation
+    Channel
+      .fromPath(params.vcf, checkIfExists: true)
+      .set{ ch_imp }
   // Run post-imputation QC for imputation in TOPMed server
   } else if (params.post_impute && params.topmed_imputation) {
+    // .fam file after pre-imputation QC
     Channel
-    .fromPath(params.topmed_imputation_results, checkIfExists: true)
-    .set { topmed_results_dir }
+      .fromPath(params.qc_fam, checkIfExists: true)
+      .set{ qc_fam }
+    // Path to directory with zip files (one per chromosome) resulting from TOPMed imputation
+    Channel
+      .fromPath(params.topmed_imputation_results, checkIfExists: true)
+      .set { topmed_results_dir }
   }
   
   main:
@@ -284,6 +291,6 @@ workflow {
 	if ( params.post_impute && !params.topmed_imputation ) {
     postImputation(ch_imp, ch_fam)
 	} else if ( params.post_impute && params.topmed_imputation ) {
-    postImputation_topmed(topmed_results_dir)
+    postImputation_topmed(qc_fam, topmed_results_dir)
   }
 }

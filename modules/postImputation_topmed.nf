@@ -121,6 +121,28 @@ process filter_imp_quality_topmed {
     '''
 }
 
+// STEP 6: remove "0_" substring from IDs (added during TOPMed imputation)
+process trim_ids {
+    label 'plink1'
+
+    input:
+    path(bed)
+    path(bim)
+    path(fam)
+
+    output:
+    // path "H2.bed", emit: bed
+    // path "H2.bim", emit: bim
+    path "H2.fam", emit: fam
+    // path "H2.log", emit: log
+
+    shell:
+    '''
+    # plink --bfile !{bim.baseName} --freq --out H2
+    awk '{print $1, $2, $3, $4, $5, $6}' !{fam} | sed 's/^0_//g' > H2.fam
+    '''
+}
+
 // // STEP 2b: convert files to PLINK format and join them all
 // process convert_vcfs_to_plink {
 //     label 'plink1'

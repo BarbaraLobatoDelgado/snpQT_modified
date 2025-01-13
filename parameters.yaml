@@ -179,6 +179,9 @@
   # they have been chosen based on experience on our own datasets, 
   # however, each dataset is unique, so please feel free to change them
   # taking into account the accepted ranges
+
+  # Directory with plink files after pre-imputation QC (patients and markers were filtered)
+  qc_fam: 'results/qc/bfiles/E11.fam'
   
   # dummy parameters to silence nextflow warnings ------------------------------
   
