@@ -39,28 +39,6 @@ plink_files_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_r
 # Use SNPs resulting from pruning
 plink_files_name <- "pruned_output"
 
-# Load principal components from PCA done with PLINK1.9
-pca_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_results/results/post_imputation/bfiles/"
-pca_file_path <- "pca_results.eigenvec"
-pca_eigenvec_path <- paste0(pca_dir_path, pca_file_path)
-
-pc <- read.table(
-  pca_eigenvec_path, 
-  header = FALSE, 
-  col.names = c("FID", "IID", "PC1", "PC2", "PC3", 
-                "PC4", "PC5", "PC6", "PC7", "PC8",
-                "PC9", "PC10", "PC11", "PC12", "PC113",
-                "PC14", "PC15", "PC16", "PC17", "PC18",
-                "PC19", "PC20"), 
-  colClasses = c("character", "character", rep("numeric", times = 20))
-)
-
-
-# # Add patient_code to table
-# pc %<>%
-#   mutate(IID = paste(FID, IID, sep = "_")) %>%
-#   mutate(FID = 0)
-
 
 # Use ID from an9elproject object
 oncoth2 <- get_project("oncoth2") # , version = "0.0.8008"
@@ -101,7 +79,7 @@ oncoth2_pheno <- oncoth2$data %>%
   # filter(patient_code %in% pc$IID) %>%
   select(id, patient_code, VTE, age_cancer_dx, sex)
 
-oncoth2_pheno <- right_join(oncoth2_pheno, pc, by = c("patient_code" = "IID"))
+
 
 # --- Remove when patients are excluded beforehand --- #
 
@@ -109,39 +87,48 @@ oncoth2_pheno <- right_join(oncoth2_pheno, pc, by = c("patient_code" = "IID"))
 # print(table(oncoth2_pheno$VTE))
 
 print(paste("There are", dim(oncoth2_pheno)[1], "patients in ONCOTHROMB2 with clinical information that can be analysed."))
-print(paste("There are only", dim(pc)[1], "individuals genotyped in ONCOTHROMB2."))
+# print(paste("There are only", dim(pc)[1], "individuals genotyped in ONCOTHROMB2."))
 
 # # Get clinical info for genotyped patients
 # oncoth2_pheno_genotyped <- oncoth2_pheno %>%
 #   filter(patient_code %in% pc$IID)
 
-# # Remove patients that are not eligible or haven't signed the IC
-pc %<>%
-  # Careful! Since IID and patient code are strings, to properly compare them
-  # they have to be ordered
-  filter(order(IID) %in% order(oncoth2_pheno$patient_code))
-
-# Transform to matrix
-pc_matrix <- pc
-rownames(pc_matrix) <- pc_matrix$IID
-pc_matrix %<>% select(-c(FID, IID))
-pc_matrix <- as.matrix(pc_matrix)
-
-
-# Create dataframe for ScanAnnotationDataFrame
-scan_data <- data.frame(
-  "scanID" = oncoth2_pheno$patient_code, 
-  "age" = oncoth2_pheno$age_cancer_dx, 
-  "sex" = ifelse(oncoth2_pheno$sex == 0, "M", "F"), # valid format for ScanAnnotationDataFrame
-  "pc1" = pc$PC1, 
-  "pc2" = pc$PC2,
-  "pc3" = pc$PC3,
-  "pc4" = pc$PC4, 
-  "pheno" = oncoth2_pheno$VTE
-)
-# Create ScanAnnotationDataFrame object
-scanAnnot = ScanAnnotationDataFrame(data = scan_data)
-
+# # --- If is done with PLINK --- #
+# # Load principal components from PCA done with PLINK1.9
+# pca_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_results/results/post_imputation/bfiles/"
+# pca_file_path <- "pca_results.eigenvec"
+# pca_eigenvec_path <- paste0(pca_dir_path, pca_file_path)
+# 
+# pc <- read.table(
+#   pca_eigenvec_path, 
+#   header = FALSE, 
+#   col.names = c("FID", "IID", "PC1", "PC2", "PC3", 
+#                 "PC4", "PC5", "PC6", "PC7", "PC8",
+#                 "PC9", "PC10", "PC11", "PC12", "PC113",
+#                 "PC14", "PC15", "PC16", "PC17", "PC18",
+#                 "PC19", "PC20"), 
+#   colClasses = c("character", "character", rep("numeric", times = 20))
+# )
+# 
+# 
+# # # Add patient_code to table
+# # pc %<>%
+# #   mutate(IID = paste(FID, IID, sep = "_")) %>%
+# #   mutate(FID = 0)
+# 
+# 
+# # # Remove patients that are not eligible or haven't signed the IC
+# pc %<>%
+#   # Careful! Since IID and patient code are strings, to properly compare them
+#   # they have to be ordered
+#   filter(order(IID) %in% order(oncoth2_pheno$patient_code))
+# oncoth2_pheno <- right_join(oncoth2_pheno, pc, by = c("patient_code" = "IID"))
+# # Transform to matrix
+# pc_matrix <- pc
+# rownames(pc_matrix) <- pc_matrix$IID
+# pc_matrix %<>% select(-c(FID, IID))
+# pc_matrix <- as.matrix(pc_matrix)
+# # --- If is done with PLINK --- #
 
 
 # Check if previous GDS file exists
@@ -167,6 +154,8 @@ snpgdsBED2GDS(
   out.gdsfn = gds_file
 )
 
+# Close GDS file if it was read before
+closefn.gds(genotype_file)
 
 # Load GDS (Genomic Data Structures) file
 genotype_file <- GdsGenotypeReader(gds_file)
@@ -193,29 +182,63 @@ pca <- pcair(
   gdsobj = geno_iterator, 
   num.cores = num_cores
 )
-
 # Get principal components
-PCs_pcair_matrix <- pca$vectors
+PCs_pcair_matrix <- as.data.frame(pca$vectors)
+# Rename columns
+colnames(PCs_pcair_matrix) <- c(paste0("PC", 1:dim(PCs_pcair_matrix)[2]))
 
-# Estimate kinship coefficients
+
+# Create dataframe for ScanAnnotationDataFrame
+scan_data <- data.frame(
+  "scanID" = oncoth2_pheno$patient_code, 
+  "age" = oncoth2_pheno$age_cancer_dx, 
+  "sex" = ifelse(oncoth2_pheno$sex == 0, "M", "F"), # valid format for ScanAnnotationDataFrame
+  "pc1" = PCs_pcair_matrix$PC1, 
+  "pc2" = PCs_pcair_matrix$PC2,
+  "pc3" = PCs_pcair_matrix$PC3,
+  "pc4" = PCs_pcair_matrix$PC4, 
+  "pheno" = oncoth2_pheno$VTE
+)
+# Create ScanAnnotationDataFrame object
+scanAnnot <- ScanAnnotationDataFrame(data = scan_data)
+
+
+
+
+# ------------------------------------------------- # 
+#           Estimate kinship coefficients
+# ------------------------------------------------- # 
 # Model-free estimation of recent genetic relatedness
 pcrel_result <- pcrelate(
   gdsobj = geno_iterator, 
   pcs = PCs_pcair_matrix
 )
 
+
 # Genetic relationship matrix
 grm <- pcrelateToMatrix(pcrel_result)
 # grm[1:5, 1:5]
 
 
-
+# ------------------------------------------------- # 
+#                   Fit models
+# ------------------------------------------------- # 
 
 # Fit null model
 # Mixed model that contains all covariates but not genotype data
 # Null hypothesis is that all SNPs have no effect on outcome
-nullmodel = fitNullModel(
-  scanAnnot, family = "binomial")
+nullmodel <- fitNullModel(
+  scanAnnot, 
+  outcome = "pheno",
+  covars = c("age", "sex", "pc1", "pc2", "pc3", "pc4"),
+  cov.mat = grm,
+  family = "binomial"
+  )
 
-
+# Run SNP-phenotype association tests
+mixed_models <- assocTestSingle(
+  gdsobj = geno_iterator, # establish how many SNPs are read at a time
+  null.model = nullmodel, 
+  BPPARAM = BiocParallel::SerialParam()
+)
 
