@@ -206,12 +206,12 @@ oncoth2_pheno %<>%
 scan_data <- data.frame(
   "scanID" = oncoth2_pheno$patient_code, 
   "age" = oncoth2_pheno$age_cancer_dx, 
-  "sex" = ifelse(oncoth2_pheno$sex == 0, "M", "F"), # expected format for ScanAnnotationDataFrame
+  "sex" = as.factor(ifelse(oncoth2_pheno$sex == "Man", "M", "F")), # expected format for ScanAnnotationDataFrame
   "pc1" = PCs_pcair_df$PC1, 
   "pc2" = PCs_pcair_df$PC2,
   "pc3" = PCs_pcair_df$PC3,
   "pc4" = PCs_pcair_df$PC4, 
-  "pheno" = oncoth2_pheno$VTE
+  "pheno" = ifelse(oncoth2_pheno$VTE == "Yes", 1, 0)
 )
 # Create ScanAnnotationDataFrame object
 scanAnnot <- ScanAnnotationDataFrame(data = scan_data)
