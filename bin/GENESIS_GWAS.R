@@ -14,6 +14,7 @@ pacman::p_load(
   data.table,
   tidyverse, 
   magrittr,
+  ggplot2,
   GWASTools,
   SNPRelate,
   GENESIS, 
@@ -27,6 +28,8 @@ pacman::p_load(
 # ...
 # args <- commandArgs(trailingOnly = TRUE)
 
+# # Close opened GDS files
+# closefn.gds(gds_file)
 
 # Set to use half the cores
 num_cores <- parallel::detectCores() - 4
@@ -154,8 +157,8 @@ snpgdsBED2GDS(
   out.gdsfn = gds_file
 )
 
-# Close GDS file if it was read before
-closefn.gds(genotype_file)
+# # Close GDS file if it was read before
+# closefn.gds(genotype_file)
 
 # Load GDS (Genomic Data Structures) file
 genotype_file <- GdsGenotypeReader(gds_file)
@@ -186,6 +189,51 @@ pca <- pcair(
 PCs_pcair_matrix <- as.data.frame(pca$vectors)
 # Rename columns
 colnames(PCs_pcair_matrix) <- c(paste0("PC", 1:dim(PCs_pcair_matrix)[2]))
+
+# Proportion of variance explained by each PC
+eigenvalues <- pca$values
+
+variance_explained_by_PC <- function(eigenvalues) {
+  #'
+  #'
+  
+  # Calculate proportion of variance explain
+  prop_variance <- eigenvalues / sum(eigenvalues)
+  
+  # Calculate cumulative proportion of variance explained
+  cumulative_variance <- cumsum(prop_variance)
+  
+  # Create dataframe for plotting
+  variance_df <- data.frame(
+    PC = 1:length(prop_variance),
+    Proportion = prop_variance,
+    Cumulative = cumulative_variance
+  )
+  
+  # Create scree plot
+  ggplot(variance_df, aes(x = PC, y = Proportion)) + 
+    # Barplot for proportion of variance explained
+    geom_bar(stat = "identity", fill = "skyblue") +
+    # geom_text(aes(label = sprintf("%.2f", Proportion)), vjust = -0.5, size = 3.5) +
+    # Line for cumulative proportion of variance explained
+    # geom_line(aes(y = Cumulative), color = "red", size = 1) + 
+    # geom_point(aes(y = Cumulative), color = "red", size = 2) +
+    labs(
+      title = "Scree Plot", 
+      x = "Principal Component", 
+      y = "Proportion of Variance Explained"
+    ) + 
+    theme_minimal() + 
+    scale_x_continuous(breaks = 1:length(prop_variance)) +
+    theme(
+      plot.title = element_text(hjust = 0.5, size = 16),
+      axis.title = element_text(size = 14)
+    )
+ 
+}
+
+# Show scree plot
+variance_explained_by_PC(eigenvalues = eigenvalues)
 
 
 # Create dataframe for ScanAnnotationDataFrame
