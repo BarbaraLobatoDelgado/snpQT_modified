@@ -46,7 +46,7 @@ plink_files_name <- "pruned_output"
 
 
 # ------------------------------------------------- # 
-#         Convert genotype data to GDS
+#         Manage genotype data as GDS
 # ------------------------------------------------- # 
 
 # GDS file path
@@ -68,21 +68,26 @@ snpgdsBED2GDS(
 # Load GDS (Genomic Data Structures) file
 genotype_file <- GdsGenotypeReader(gds_file)
 genotype_data <- GenotypeData(genotype_file)
+genotype_ids <- getScanID(genotype_data)
 
 # Show some information from GDS file
 print("IIDs in GDS file:")
-print(getScanID(genotype_data))
+print(genotype_ids)
 print("Number of SNPs in GDS file:")
 print(nsnp(genotype_data))
 print("SNPs rsIDs in GDS file:")
 print(getSnpID(genotype_data))
 
+# tt = PCs_pcair_matrix %>% filter(rownames(.) %in% oncoth2_pheno$patient_code)
+# 
+# 
+# genotype_data_subset <- subsetGenotypeData(genotype_data, sample.id = oncoth2_pheno$patient_code)
 
 # ------------------------------------------------- # 
 #              Load phenotype data
 # ------------------------------------------------- # 
 
-# Use ID from an9elproject object
+# Load an9elproject object 
 oncoth2 <- get_project("oncoth2") # , version = "0.0.8008"
 # oncoth2_ids <- oncoth2$data %>%
 #   select(id, patient_code)
@@ -90,17 +95,6 @@ oncoth2 <- get_project("oncoth2") # , version = "0.0.8008"
 table(oncoth2$data$eligible, useNA = "ifany")
 table(oncoth2$data$informed_consent, useNA = "ifany")
 table(oncoth2$data$VTE, useNA = "ifany")
-
-
-# We think reasonable to use the first 4 PCs as covariates to correct for
-# unknown effects caused by genetic variability, as well as ancestry (some individuals
-# don't have European ancestry but we are going to try to keep them in the analysis) 
-
-
-# Create ScanAnnotationDataFrame 
-# Contains outcome and covariate data, as well as unique identifier (scanID)
-# It can be paired with genotype
-
 
 
 # Select dependent variable and covariates
@@ -114,28 +108,24 @@ table(oncoth2$data$VTE, useNA = "ifany")
 
 # --- Remove when patients are excluded beforehand --- #
 oncoth2_pheno <- oncoth2$data %>%
-  # # Make sure to leave out those with
+  # Make sure to leave out those with
   filter(informed_consent == "Yes") %>%
   filter(eligible == "Yes") %>%
-  select(id, eligible, VTE, age_cancer_dx, sex) 
+  filter(!is.na(VTE)) %>%
+  select(id, patient_code, VTE, age_cancer_dx, sex) 
 
 
 
-# --- Remove when patients are excluded beforehand --- #
 
-# Proportion of VTE
-# print(table(oncoth2_pheno$VTE))
 
-print(paste("There are", dim(oncoth2_pheno)[1], "patients in ONCOTHROMB2 with clinical information that can be analysed."))
-# print(paste("There are only", dim(pc)[1], "individuals genotyped in ONCOTHROMB2."))
-
-# # Get clinical info for genotyped patients
-# oncoth2_pheno_genotyped <- oncoth2_pheno %>%
-#   filter(patient_code %in% pc$IID)
 
 # ------------------------------------------------- # 
 #                     Do PCA
 # ------------------------------------------------- # 
+
+# We think reasonable to use the first 4 PCs as covariates to correct for
+# unknown effects caused by genetic variability, as well as ancestry (some individuals
+# don't have European ancestry but we are going to try to keep them in the analysis) 
 
 # Create GenotypeBlockIterator class to iterate over blocks of 10,000 SNPs
 geno_iterator <- GenotypeBlockIterator(genotype_data)
@@ -147,9 +137,13 @@ pca <- pcair(
   num.cores = num_cores
 )
 # Get principal components
-PCs_pcair_matrix <- as.data.frame(pca$vectors)
+# Matrix
+PCs_pcair_matrix <- pca$vectors
+
+# Dataframe
+PCs_pcair_df <- as.data.frame(pca$vectors)
 # Rename columns
-colnames(PCs_pcair_matrix) <- c(paste0("PC", 1:dim(PCs_pcair_matrix)[2]))
+colnames(PCs_pcair_df) <- c(paste0("PC", 1:dim(PCs_pcair_df)[2]))
 
 # Proportion of variance explained by each PC
 eigenvalues <- pca$values
@@ -198,7 +192,7 @@ variance_explained_by_PC <- function(eigenvalues) {
 variance_explained_by_PC(eigenvalues = eigenvalues)
 
 # Select subset of patients
-oncoth2_pheno_test <- oncoth2_pheno %>%
+oncoth2_pheno %<>%
   filter(patient_code %in% getScanID(genotype_data))
 
 
@@ -206,15 +200,17 @@ oncoth2_pheno_test <- oncoth2_pheno %>%
 #           Create ScanAnnotationDataFrame
 # ------------------------------------------------- # 
 
-# Create dataframe for ScanAnnotationDataFrame
+# Create ScanAnnotationDataFrame 
+# Contains outcome and covariate data, as well as unique identifier (scanID)
+# It can be paired with genotype
 scan_data <- data.frame(
   "scanID" = oncoth2_pheno$patient_code, 
   "age" = oncoth2_pheno$age_cancer_dx, 
-  "sex" = ifelse(oncoth2_pheno$sex == 0, "M", "F"), # valid format for ScanAnnotationDataFrame
-  "pc1" = PCs_pcair_matrix$PC1, 
-  "pc2" = PCs_pcair_matrix$PC2,
-  "pc3" = PCs_pcair_matrix$PC3,
-  "pc4" = PCs_pcair_matrix$PC4, 
+  "sex" = ifelse(oncoth2_pheno$sex == 0, "M", "F"), # expected format for ScanAnnotationDataFrame
+  "pc1" = PCs_pcair_df$PC1, 
+  "pc2" = PCs_pcair_df$PC2,
+  "pc3" = PCs_pcair_df$PC3,
+  "pc4" = PCs_pcair_df$PC4, 
   "pheno" = oncoth2_pheno$VTE
 )
 # Create ScanAnnotationDataFrame object
