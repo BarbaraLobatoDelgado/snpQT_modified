@@ -18,6 +18,7 @@ pacman::p_load(
   GWASTools,
   SNPRelate,
   GENESIS, 
+  qqman,
   install = FALSE, update = FALSE
 )
 
@@ -246,15 +247,55 @@ grm <- pcrelateToMatrix(pcrel_result)
 nullmodel <- fitNullModel(
   scanAnnot, 
   outcome = "pheno",
+  # Use multiple fixed effect covariates
   covars = c("age", "sex", "pc1", "pc2", "pc3", "pc4"),
+  # Use GRM to account for relatedness
   cov.mat = grm,
   family = "binomial"
   )
 
+# Variance components estimates for the random effects
+nullmodel$varComp
+
+# Fixed effects covariates info
+fixed_effects <- nullmodel$fixef
+
+# 
+nullmodel$fit
+
+# Heritability of the trait
+varCompCI(null.model = nullmodel, prop = TRUE)
+
 # Run SNP-phenotype association tests
-mixed_models <- assocTestSingle(
+assoc_results_table <- assocTestSingle(
   gdsobj = geno_iterator, # establish how many SNPs are read at a time
   null.model = nullmodel, 
-  BPPARAM = BiocParallel::SerialParam()
+  # BPPARAM = BiocParallel::MulticoreParam(workers = num_cores) # Parallelise
 )
+
+
+# ------------------------------------------------- # 
+#               Results interpretation
+# ------------------------------------------------- # 
+
+assoc_results_table_reformated <- assoc_results_table %>%
+  mutate(chr = case_when(
+    chr == "X" ~ 
+  ))
+
+manhattan(
+  assoc_results_table,
+  chr = "chr",
+  bp = "pos",
+  p = "Score.pval",
+  snp = "variant.id",
+  main = "Manhattan Plot",
+  ylim = c(0, -log10(min(results_table$P)) + 1), # Adjust for P-value range
+  col = c("blue4", "orange3")
+)
+
+
+
+
+
 
