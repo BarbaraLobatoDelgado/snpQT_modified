@@ -28,12 +28,14 @@ pacman::p_load(
 # ...
 # args <- commandArgs(trailingOnly = TRUE)
 
-# # Close opened GDS files
-# closefn.gds(gds_file)
-
 # Set to use half the cores
 num_cores <- parallel::detectCores() - 4
 # you can then use function mclapply() to run several operations in different cores
+
+
+# ------------------------------------------------- # 
+#         Load genotype data from PLINK files
+# ------------------------------------------------- # 
 
 # Load PLINK files
 plink_files_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_results/results/post_imputation/bfiles/"
@@ -43,13 +45,51 @@ plink_files_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_r
 plink_files_name <- "pruned_output"
 
 
+# ------------------------------------------------- # 
+#         Convert genotype data to GDS
+# ------------------------------------------------- # 
+
+# GDS file path
+gds_file <- paste0(plink_files_dir_path, "genotype.gds")
+
+# Check if GDS file already exists and delete it
+if (file.exists(gds_file)) {
+  unlink(gds_file)
+}
+
+# Convert PLINK files to GDS to handle genotype data
+snpgdsBED2GDS(
+  bed.fn = paste0(plink_files_dir_path, plink_files_name, ".bed"), # "./GWAS/imputation_results/oncoth2.all_chr.TOPMED.hg38.bed",
+  fam.fn = paste0(plink_files_dir_path, plink_files_name, ".fam"),
+  bim.fn = paste0(plink_files_dir_path, plink_files_name, ".bim"),
+  out.gdsfn = gds_file
+)
+
+# Load GDS (Genomic Data Structures) file
+genotype_file <- GdsGenotypeReader(gds_file)
+genotype_data <- GenotypeData(genotype_file)
+
+# Show some information from GDS file
+print("IIDs in GDS file:")
+print(getScanID(genotype_data))
+print("Number of SNPs in GDS file:")
+print(nsnp(genotype_data))
+print("SNPs rsIDs in GDS file:")
+print(getSnpID(genotype_data))
+
+
+# ------------------------------------------------- # 
+#              Load phenotype data
+# ------------------------------------------------- # 
+
 # Use ID from an9elproject object
 oncoth2 <- get_project("oncoth2") # , version = "0.0.8008"
-oncoth2_ids <- oncoth2$data %>%
-  select(id, patient_code)
+# oncoth2_ids <- oncoth2$data %>%
+#   select(id, patient_code)
 
-
-
+table(oncoth2$data$eligible, useNA = "ifany")
+table(oncoth2$data$informed_consent, useNA = "ifany")
+table(oncoth2$data$VTE, useNA = "ifany")
 
 
 # We think reasonable to use the first 4 PCs as covariates to correct for
@@ -61,9 +101,7 @@ oncoth2_ids <- oncoth2$data %>%
 # Contains outcome and covariate data, as well as unique identifier (scanID)
 # It can be paired with genotype
 
-table(oncoth2$data$eligible, useNA = "ifany")
-table(oncoth2$data$informed_consent, useNA = "ifany")
-table(oncoth2$data$VTE, useNA = "ifany")
+
 
 # Select dependent variable and covariates
 # oncoth2_pheno <- oncoth2$data %>%
@@ -77,10 +115,9 @@ table(oncoth2$data$VTE, useNA = "ifany")
 # --- Remove when patients are excluded beforehand --- #
 oncoth2_pheno <- oncoth2$data %>%
   # # Make sure to leave out those with
-  # filter(informed_consent == "Yes") %>%
-  # filter(eligible == "Yes") %>%
-  # filter(patient_code %in% pc$IID) %>%
-  select(id, patient_code, VTE, age_cancer_dx, sex)
+  filter(informed_consent == "Yes") %>%
+  filter(eligible == "Yes") %>%
+  select(id, eligible, VTE, age_cancer_dx, sex) 
 
 
 
@@ -96,85 +133,9 @@ print(paste("There are", dim(oncoth2_pheno)[1], "patients in ONCOTHROMB2 with cl
 # oncoth2_pheno_genotyped <- oncoth2_pheno %>%
 #   filter(patient_code %in% pc$IID)
 
-# # --- If is done with PLINK --- #
-# # Load principal components from PCA done with PLINK1.9
-# pca_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_results/results/post_imputation/bfiles/"
-# pca_file_path <- "pca_results.eigenvec"
-# pca_eigenvec_path <- paste0(pca_dir_path, pca_file_path)
-# 
-# pc <- read.table(
-#   pca_eigenvec_path, 
-#   header = FALSE, 
-#   col.names = c("FID", "IID", "PC1", "PC2", "PC3", 
-#                 "PC4", "PC5", "PC6", "PC7", "PC8",
-#                 "PC9", "PC10", "PC11", "PC12", "PC113",
-#                 "PC14", "PC15", "PC16", "PC17", "PC18",
-#                 "PC19", "PC20"), 
-#   colClasses = c("character", "character", rep("numeric", times = 20))
-# )
-# 
-# 
-# # # Add patient_code to table
-# # pc %<>%
-# #   mutate(IID = paste(FID, IID, sep = "_")) %>%
-# #   mutate(FID = 0)
-# 
-# 
-# # # Remove patients that are not eligible or haven't signed the IC
-# pc %<>%
-#   # Careful! Since IID and patient code are strings, to properly compare them
-#   # they have to be ordered
-#   filter(order(IID) %in% order(oncoth2_pheno$patient_code))
-# oncoth2_pheno <- right_join(oncoth2_pheno, pc, by = c("patient_code" = "IID"))
-# # Transform to matrix
-# pc_matrix <- pc
-# rownames(pc_matrix) <- pc_matrix$IID
-# pc_matrix %<>% select(-c(FID, IID))
-# pc_matrix <- as.matrix(pc_matrix)
-# # --- If is done with PLINK --- #
-
-
-# Check if previous GDS file exists
-gds_file <- paste0(plink_files_dir_path, "genotype.gds")
-
-# if (!file.exists(gds_file)) {
-#   # Convert PLINK files to GDS to handle genotype data
-#   snpgdsBED2GDS(
-#     bed.fn = paste0(plink_files_dir_path, plink_files_name, ".bed"), # "./GWAS/imputation_results/oncoth2.all_chr.TOPMED.hg38.bed",
-#     fam.fn = paste0(plink_files_dir_path, plink_files_name, ".fam"),
-#     bim.fn = paste0(plink_files_dir_path, plink_files_name, ".bim"),
-#     out.gdsfn = gds_file
-#   )
-# } else {
-#   print("GDS file already exists.")
-# }
-
-# Convert PLINK files to GDS to handle genotype data
-snpgdsBED2GDS(
-  bed.fn = paste0(plink_files_dir_path, plink_files_name, ".bed"), # "./GWAS/imputation_results/oncoth2.all_chr.TOPMED.hg38.bed",
-  fam.fn = paste0(plink_files_dir_path, plink_files_name, ".fam"),
-  bim.fn = paste0(plink_files_dir_path, plink_files_name, ".bim"),
-  out.gdsfn = gds_file
-)
-
-# # Close GDS file if it was read before
-# closefn.gds(genotype_file)
-
-# Load GDS (Genomic Data Structures) file
-genotype_file <- GdsGenotypeReader(gds_file)
-genotype_data <- GenotypeData(genotype_file)
-
-# Show some information from GDS file
-print("IIDs in GDS file:")
-print(getScanID(genotype_data))
-print("Number of SNPs in GDS file:")
-print(nsnp(genotype_data))
-print("SNPs rsIDs in GDS file:")
-print(getSnpID(genotype_data))
-
-
-# Include Genetic Relationship Matrix (GRM) to account for genetic
-# similarity among sample individuals
+# ------------------------------------------------- # 
+#                     Do PCA
+# ------------------------------------------------- # 
 
 # Create GenotypeBlockIterator class to iterate over blocks of 10,000 SNPs
 geno_iterator <- GenotypeBlockIterator(genotype_data)
@@ -192,6 +153,7 @@ colnames(PCs_pcair_matrix) <- c(paste0("PC", 1:dim(PCs_pcair_matrix)[2]))
 
 # Proportion of variance explained by each PC
 eigenvalues <- pca$values
+
 
 variance_explained_by_PC <- function(eigenvalues) {
   #'
@@ -214,7 +176,7 @@ variance_explained_by_PC <- function(eigenvalues) {
   ggplot(variance_df, aes(x = PC, y = Proportion)) + 
     # Barplot for proportion of variance explained
     geom_bar(stat = "identity", fill = "skyblue") +
-    # geom_text(aes(label = sprintf("%.2f", Proportion)), vjust = -0.5, size = 3.5) +
+    geom_text(aes(label = sprintf("%.2f", Proportion)), vjust = -0.5, size = 1.5) +
     # Line for cumulative proportion of variance explained
     # geom_line(aes(y = Cumulative), color = "red", size = 1) + 
     # geom_point(aes(y = Cumulative), color = "red", size = 2) +
@@ -235,6 +197,14 @@ variance_explained_by_PC <- function(eigenvalues) {
 # Show scree plot
 variance_explained_by_PC(eigenvalues = eigenvalues)
 
+# Select subset of patients
+oncoth2_pheno_test <- oncoth2_pheno %>%
+  filter(patient_code %in% getScanID(genotype_data))
+
+
+# ------------------------------------------------- # 
+#           Create ScanAnnotationDataFrame
+# ------------------------------------------------- # 
 
 # Create dataframe for ScanAnnotationDataFrame
 scan_data <- data.frame(
@@ -251,17 +221,19 @@ scan_data <- data.frame(
 scanAnnot <- ScanAnnotationDataFrame(data = scan_data)
 
 
-
-
 # ------------------------------------------------- # 
 #           Estimate kinship coefficients
 # ------------------------------------------------- # 
+
 # Model-free estimation of recent genetic relatedness
 pcrel_result <- pcrelate(
   gdsobj = geno_iterator, 
   pcs = PCs_pcair_matrix
 )
 
+# ------------------------------------------------- # 
+#         Create Genetic Relationship Matrix
+# ------------------------------------------------- # 
 
 # Genetic relationship matrix
 grm <- pcrelateToMatrix(pcrel_result)
