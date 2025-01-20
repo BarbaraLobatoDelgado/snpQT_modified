@@ -285,19 +285,23 @@ close(geno_iterator)
 #               Results interpretation
 # ------------------------------------------------- # 
 
-# assoc_results_table_reformated <- assoc_results_table %>%
-#   mutate(chr = case_when(
-#     chr == "X" ~ 
-#   ))
+# Convert chr from character to numeric
+assoc_results_table_reformated <- assoc_results_table %>%
+  mutate(chr = case_when(
+    chr == "X" ~ "23",
+    TRUE ~ chr
+  )) %>%
+  mutate(chr = as.numeric(chr))
 
+# Manhattan plot
 manhattan(
-  assoc_results_table,
+  assoc_results_table_reformated,
   chr = "chr",
   bp = "pos",
   p = "Score.pval",
   snp = "variant.id",
   main = "Manhattan Plot",
-  ylim = c(0, -log10(min(results_table$P)) + 1), # Adjust for P-value range
+  ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
   col = c("blue4", "orange3")
 )
 
