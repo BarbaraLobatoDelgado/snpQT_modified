@@ -69,11 +69,18 @@ snpgdsBED2GDS(
 # Load GDS (Genomic Data Structures) file
 genotype_file <- GdsGenotypeReader(gds_file)
 genotype_data <- GenotypeData(genotype_file)
+
+# Get IDs 
 genotype_ids <- getScanID(genotype_data)
+# Get chromosomes
+genotype_chrs <- table(getChromosome(genotype_data))
+
 
 # Show some information from GDS file
 print("IIDs in GDS file:")
 print(genotype_ids)
+print("Chromosomes loaded into GenotypeData:")
+print(unique(getChromosome(genotype_data)))
 print("Number of SNPs in GDS file:")
 print(nsnp(genotype_data))
 print("SNPs rsIDs in GDS file:")
@@ -115,11 +122,6 @@ oncoth2_pheno <- oncoth2$data %>%
   filter(!is.na(VTE)) %>%
   select(id, patient_code, VTE, age_cancer_dx, sex) 
 
-
-
-
-
-
 # ------------------------------------------------- # 
 #                     Do PCA
 # ------------------------------------------------- # 
@@ -128,13 +130,10 @@ oncoth2_pheno <- oncoth2$data %>%
 # unknown effects caused by genetic variability, as well as ancestry (some individuals
 # don't have European ancestry but we are going to try to keep them in the analysis) 
 
-# Create GenotypeBlockIterator class to iterate over blocks of 10,000 SNPs
-geno_iterator <- GenotypeBlockIterator(genotype_data)
-
 # Do PCA on genome-wide SNP data
 # The principal components account for population structure in a sample
 pca <- pcair(
-  gdsobj = geno_iterator, 
+  gdsobj = genotype_data, # geno_iterator, 
   num.cores = num_cores
 )
 # Get principal components
@@ -212,8 +211,9 @@ scan_data <- data.frame(
   "pc2" = PCs_pcair_df$PC2,
   "pc3" = PCs_pcair_df$PC3,
   "pc4" = PCs_pcair_df$PC4, 
-  "pheno" = ifelse(oncoth2_pheno$VTE == "Yes", 1, 0)
+  "pheno" = ifelse(oncoth2_pheno$VTE == "Yes", 1, 0) # expected format for assocTestSingle
 )
+
 # Create ScanAnnotationDataFrame object
 scanAnnot <- ScanAnnotationDataFrame(data = scan_data)
 
@@ -221,6 +221,9 @@ scanAnnot <- ScanAnnotationDataFrame(data = scan_data)
 # ------------------------------------------------- # 
 #           Estimate kinship coefficients
 # ------------------------------------------------- # 
+
+# Create GenotypeBlockIterator class to iterate over blocks of 10,000 SNPs
+geno_iterator <- GenotypeBlockIterator(genotype_data, snpBlock = 10000)
 
 # Model-free estimation of recent genetic relatedness
 pcrel_result <- pcrelate(
@@ -273,15 +276,19 @@ assoc_results_table <- assocTestSingle(
   # BPPARAM = BiocParallel::MulticoreParam(workers = num_cores) # Parallelise
 )
 
+# Close GenotypeBlockIterator connection to avoid assocTestSingle() to show
+# only last chromosome
+close(geno_iterator)
+
 
 # ------------------------------------------------- # 
 #               Results interpretation
 # ------------------------------------------------- # 
 
-assoc_results_table_reformated <- assoc_results_table %>%
-  mutate(chr = case_when(
-    chr == "X" ~ 
-  ))
+# assoc_results_table_reformated <- assoc_results_table %>%
+#   mutate(chr = case_when(
+#     chr == "X" ~ 
+#   ))
 
 manhattan(
   assoc_results_table,
