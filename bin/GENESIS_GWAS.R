@@ -305,17 +305,63 @@ assoc_results_table_reformated <- assoc_results_table %>%
   mutate(bonferroni_adjusted_pvals = p.adjust(
     p = assoc_results_table$Score.pval, 
     method = "bonferroni"
+  )) %>%
+  # Apply FDR correction to p-values
+  mutate(fdr_adjusted_pvals = p.adjust(
+    p = assoc_results_table$Score.pval, 
+    method = "fdr"
   ))
 
+# 
+# ggplot(assoc_results_table_reformated, aes(x = adjust_pvalues)) +
+#   geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+#   labs(x = "Adjusted p-value", y = "Frequency", title = "Histogram of Adjusted p-values") +
+#   theme_minimal()
 
-ggplot(assoc_results_table_reformated, aes(x = adjust_pvalues)) +
-  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
-  labs(x = "Adjusted p-value", y = "Frequency", title = "Histogram of Adjusted p-values") +
-  theme_minimal()
+# Function to calculate Genetic Inflation Factor (lambda)
+calculate_gif <- function(pvals) {
+  #'
+  #'
+  
+  # Compute observed -log10(p-values)
+  observed_logp <- -log10(pvals)
+  
+  # Compute expected -log10(p-values) under the null hypothesis
+  # Null hypothesis: p-values follow a uniform distribution
+  expected_logp <- -log10(ppoints(length(pvals)))
+  
+  # Calculate lamda
+  lambda <- median(observed_logp) / median(expected_logp)
+  
+  return(lambda)
+}
 
 
+
+# QQ plots
+# Raw p-values
+lambda_raw_pvals <- calculate_gif(assoc_results_table_reformated$Score.pval)
+qq(pvector = assoc_results_table_reformated$Score.pval, 
+   main = "QQ plot for association with raw p-values", 
+   sub = paste("Lambda = ", lambda_raw_pvals)
+   )
+
+# Bonferroni adjusted p-values
+lambda_bonfe_pvals <- calculate_gif(assoc_results_table_reformated$bonferroni_adjusted_pvals)
+qq(pvector = assoc_results_table_reformated$bonferroni_adjusted_pvals,
+   main = "QQ plot for association with adjusted p-values using Bonferroni method",
+   sub = paste("Lambda = ", lambda_bonfe_pvals)
+   )
+
+# FDR adjusted p-values
+lambda_fdr_pvals <- calculate_gif(assoc_results_table_reformated$fdr_adjusted_pvals)
+qq(pvector = assoc_results_table_reformated$fdr_adjusted_pvals,
+   main = "QQ plot for association with adjusted p-values using FDR method", 
+   sub = paste("Lambda = ", lambda_fdr_pvals)
+)
 
 # Manhattan plot
+# Raw p-values
 manhattan(
   assoc_results_table_reformated,
   chr = "chr",
@@ -327,7 +373,29 @@ manhattan(
   col = c("blue4", "orange3")
 )
 
+# Bonferroni adjusted p-values
+manhattan(
+  assoc_results_table_reformated,
+  chr = "chr",
+  bp = "pos",
+  p = "bonferroni_adjusted_pvals",
+  snp = "variant.id",
+  main = "Manhattan Plot",
+  ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
+  col = c("blue4", "orange3")
+)
 
+# FDR adjusted p-values
+manhattan(
+  assoc_results_table_reformated,
+  chr = "chr",
+  bp = "pos",
+  p = "fdr_adjusted_pvals",
+  snp = "variant.id",
+  main = "Manhattan Plot",
+  ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
+  col = c("blue4", "orange3")
+)
 
 
 
