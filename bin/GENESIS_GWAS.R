@@ -211,6 +211,12 @@ scan_data <- data.frame(
   "pc2" = PCs_pcair_df$PC2,
   "pc3" = PCs_pcair_df$PC3,
   "pc4" = PCs_pcair_df$PC4, 
+  "pc5" = PCs_pcair_df$PC5,
+  "pc6" = PCs_pcair_df$PC6,
+  "pc7" = PCs_pcair_df$PC7,
+  "pc8" = PCs_pcair_df$PC8,
+  "pc9" = PCs_pcair_df$PC9,
+  "pc10" = PCs_pcair_df$PC10,
   "pheno" = ifelse(oncoth2_pheno$VTE == "Yes", 1, 0) # expected format for assocTestSingle
 )
 
@@ -251,7 +257,8 @@ nullmodel <- fitNullModel(
   scanAnnot, 
   outcome = "pheno",
   # Use multiple fixed effect covariates
-  covars = c("age", "sex", "pc1", "pc2", "pc3", "pc4"),
+  covars = c("age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5", 
+             "pc6", "pc7","pc8","pc9", "pc10"),
   # Use GRM to account for relatedness
   cov.mat = grm,
   family = "binomial"
@@ -281,6 +288,8 @@ assoc_results_table <- assocTestSingle(
 close(geno_iterator)
 
 
+
+
 # ------------------------------------------------- # 
 #               Results interpretation
 # ------------------------------------------------- # 
@@ -291,7 +300,20 @@ assoc_results_table_reformated <- assoc_results_table %>%
     chr == "X" ~ "23",
     TRUE ~ chr
   )) %>%
-  mutate(chr = as.numeric(chr))
+  mutate(chr = as.numeric(chr)) %>%
+  # Apply Bonferroni correction to p-values
+  mutate(bonferroni_adjusted_pvals = p.adjust(
+    p = assoc_results_table$Score.pval, 
+    method = "bonferroni"
+  ))
+
+
+ggplot(assoc_results_table_reformated, aes(x = adjust_pvalues)) +
+  geom_histogram(bins = 30, fill = "blue", color = "black", alpha = 0.7) +
+  labs(x = "Adjusted p-value", y = "Frequency", title = "Histogram of Adjusted p-values") +
+  theme_minimal()
+
+
 
 # Manhattan plot
 manhattan(
