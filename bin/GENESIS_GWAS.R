@@ -38,13 +38,19 @@ num_cores <- parallel::detectCores() - 4
 #         Load genotype data from PLINK files
 # ------------------------------------------------- # 
 
+use_pruned_snps <- FALSE
+
 # Load PLINK files
 plink_files_dir_path <- "/mnt/ir-bioinf02/home/blobato/oncothromb02/GWAS/snpQT_results/results/post_imputation/bfiles/"
-# Using all SNPs
-# plink_files_name <- "H7" 
-# Use SNPs resulting from pruning
-plink_files_name <- "pruned_output"
 
+if (use_pruned_snps) {
+  # Use SNPs resulting from pruning
+  plink_files_name <- "pruned_output"
+} else {
+  # Using all SNPs
+  plink_files_name <- "oncoth2_eligible_patients" # "H7"
+}
+ 
 
 # ------------------------------------------------- # 
 #         Manage genotype data as GDS
@@ -311,6 +317,12 @@ assoc_results_table_reformated <- assoc_results_table %>%
     p = assoc_results_table$Score.pval, 
     method = "fdr"
   ))
+
+# Save top table results
+write.csv(assoc_results_table_reformated, 
+          "./GWAS/snpQT_results/results/post_imputation/GWAS_results.csv", 
+          row.names = FALSE
+          )
 
 # 
 # ggplot(assoc_results_table_reformated, aes(x = adjust_pvalues)) +
