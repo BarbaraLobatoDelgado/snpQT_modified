@@ -287,6 +287,7 @@ varCompCI(null.model = nullmodel, prop = TRUE)
 assoc_results_table <- assocTestSingle(
   gdsobj = geno_iterator, # establish how many SNPs are read at a time
   null.model = nullmodel, 
+  test = "Score.SPA" # Saddle point approximation works best for imbalance case to control ratio
   # BPPARAM = BiocParallel::MulticoreParam(workers = num_cores) # Parallelise
 )
 
