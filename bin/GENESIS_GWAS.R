@@ -19,6 +19,7 @@ pacman::p_load(
   SNPRelate,
   GENESIS, 
   qqman,
+  biomaRt,
   install = FALSE, update = FALSE
 )
 
@@ -293,12 +294,32 @@ assoc_results_table <- assocTestSingle(
 # only last chromosome
 close(geno_iterator)
 
-
-
-
 # ------------------------------------------------- # 
 #               Results interpretation
 # ------------------------------------------------- # 
+
+# Annotate genes 
+# Connect to the Emsembl database
+ensembl <- useEnsembl(biomart = "genes", dataset = "hsapiens_gene_ensembl")
+
+# Annotate variants with gene information
+gene_annot <- getBM(
+  attributes = c("chromosome_name", "start_position", "end_position", 
+                 "ensembl_gene_id", "external_gene_name"), 
+  filters = c("chromosome_name", "start", "end"), 
+  values = list(assoc_results_table$chr, 
+                assoc_results_table$pos, 
+                assoc_results_table$pos), 
+  mart = ensembl
+)
+
+# Merge annotations with GWAS results
+assoc_results_table_annot <- merge(
+  assoc_results_table, gene_annot, 
+  by.x = c("chr", "pos"), 
+  by.y = c("chromosome_name", "start_position")
+  )
+
 
 # Convert chr from character to numeric
 assoc_results_table_reformated <- assoc_results_table %>%
@@ -360,12 +381,12 @@ qq(pvector = assoc_results_table_reformated$Score.pval,
    sub = paste("Lambda = ", lambda_raw_pvals)
    )
 
-# Bonferroni adjusted p-values
-lambda_bonfe_pvals <- calculate_gif(assoc_results_table_reformated$bonferroni_adjusted_pvals)
-qq(pvector = assoc_results_table_reformated$bonferroni_adjusted_pvals,
-   main = "QQ plot for association with adjusted p-values using Bonferroni method",
-   sub = paste("Lambda = ", lambda_bonfe_pvals)
-   )
+# # Bonferroni adjusted p-values
+# lambda_bonfe_pvals <- calculate_gif(assoc_results_table_reformated$bonferroni_adjusted_pvals)
+# qq(pvector = assoc_results_table_reformated$bonferroni_adjusted_pvals,
+#    main = "QQ plot for association with adjusted p-values using Bonferroni method",
+#    sub = paste("Lambda = ", lambda_bonfe_pvals)
+#    )
 
 # FDR adjusted p-values
 lambda_fdr_pvals <- calculate_gif(assoc_results_table_reformated$fdr_adjusted_pvals)
@@ -386,22 +407,25 @@ manhattan(
   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
   col = c("blue4", "orange3"), 
   suggestiveline = -log10(1e-05),
-  genomewideline = -log10(5e-08)
+  genomewideline = -log10(5e-08), 
+  annotateTop = TRUE
 )
 
-# Bonferroni adjusted p-values
-manhattan(
-  assoc_results_table_reformated,
-  chr = "chr",
-  bp = "pos",
-  p = "bonferroni_adjusted_pvals",
-  snp = "variant.id",
-  main = "Manhattan Plot with Bonferroni adjusted p-values",
-  ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
-  col = c("blue4", "orange3"), 
-  suggestiveline = -log10(1e-05),
-  genomewideline = -log10(5e-08)
-)
+
+# # Bonferroni adjusted p-values
+# manhattan(
+#   assoc_results_table_reformated,
+#   chr = "chr",
+#   bp = "pos",
+#   p = "bonferroni_adjusted_pvals",
+#   snp = "variant.id",
+#   main = "Manhattan Plot with Bonferroni adjusted p-values",
+#   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
+#   col = c("blue4", "orange3"), 
+#   suggestiveline = -log10(1e-05),
+#   genomewideline = -log10(5e-08), 
+#   annotateTop = TRUE
+# )
 
 # FDR adjusted p-values
 manhattan(
