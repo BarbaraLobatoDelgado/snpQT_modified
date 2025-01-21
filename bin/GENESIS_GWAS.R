@@ -307,6 +307,8 @@ assoc_results_table_reformated <- assoc_results_table %>%
     TRUE ~ chr
   )) %>%
   mutate(chr = as.numeric(chr)) %>%
+  # Calculate -log10() of raw p-value
+  mutate(raw_pval_log = -log10(Score.pval)) %>%
   # Apply Bonferroni correction to p-values
   mutate(bonferroni_adjusted_pvals = p.adjust(
     p = assoc_results_table$Score.pval, 
@@ -330,9 +332,9 @@ write.csv(assoc_results_table_reformated,
 #   labs(x = "Adjusted p-value", y = "Frequency", title = "Histogram of Adjusted p-values") +
 #   theme_minimal()
 
-# Function to calculate Genetic Inflation Factor (lambda)
+
 calculate_gif <- function(pvals) {
-  #'
+  #' Calculate Genetic Inflation Factor (lambda in QQ plots)
   #'
   
   # Compute observed -log10(p-values)
@@ -342,7 +344,7 @@ calculate_gif <- function(pvals) {
   # Null hypothesis: p-values follow a uniform distribution
   expected_logp <- -log10(ppoints(length(pvals)))
   
-  # Calculate lamda
+  # Calculate lambda
   lambda <- median(observed_logp) / median(expected_logp)
   
   return(lambda)
@@ -380,9 +382,11 @@ manhattan(
   bp = "pos",
   p = "Score.pval",
   snp = "variant.id",
-  main = "Manhattan Plot",
+  main = "Manhattan Plot with raw p-values",
   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
-  col = c("blue4", "orange3")
+  col = c("blue4", "orange3"), 
+  suggestiveline = -log10(1e-05),
+  genomewideline = -log10(5e-08)
 )
 
 # Bonferroni adjusted p-values
@@ -392,9 +396,11 @@ manhattan(
   bp = "pos",
   p = "bonferroni_adjusted_pvals",
   snp = "variant.id",
-  main = "Manhattan Plot",
+  main = "Manhattan Plot with Bonferroni adjusted p-values",
   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
-  col = c("blue4", "orange3")
+  col = c("blue4", "orange3"), 
+  suggestiveline = -log10(1e-05),
+  genomewideline = -log10(5e-08)
 )
 
 # FDR adjusted p-values
@@ -404,9 +410,11 @@ manhattan(
   bp = "pos",
   p = "fdr_adjusted_pvals",
   snp = "variant.id",
-  main = "Manhattan Plot",
+  main = "Manhattan Plot with FDR adjusted p-values",
   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
-  col = c("blue4", "orange3")
+  col = c("blue4", "orange3"), 
+  suggestiveline = -log10(1e-05),
+  genomewideline = -log10(5e-08)
 )
 
 
