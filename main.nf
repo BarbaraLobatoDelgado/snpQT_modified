@@ -278,6 +278,7 @@ workflow {
         pop_strat(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
         variant_qc(pop_strat.out.bed, pop_strat.out.bim, pop_strat.out.fam)
       }
+    }
 
 	  // pre-imputation
 	  if ( params.pre_impute ) {
@@ -336,6 +337,7 @@ workflow {
         gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
       }
     }
+    
 	
 	
   
