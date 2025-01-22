@@ -267,7 +267,7 @@ workflow {
       download_impute()
     } 
 
-    // workflow with build conversion
+    // OPTION 1: workflow with build conversion
     if ( params.convert_build) {
       buildConversion(ch_vcf, ch_fam)
       if ( params.qc && !params.pop_strat ) {
@@ -311,41 +311,46 @@ workflow {
       gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_final_patients)
     }
 
-    // workflow without build conversion
+    // OPTION 2: workflow without build conversion
     if ( !params.convert_build ) {
+      // Run per sample and per marker QC, without ancestry check
       if ( params.qc && !params.pop_strat ) {
         sample_qc(ch_bed, ch_bim, ch_fam)	
         variant_qc(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
+      // Run per sample and per marker QC, plus ancestry check
       } else if ( params.qc && params.pop_strat ) {
         sample_qc(ch_bed, ch_bim, ch_fam)
         pop_strat(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
         variant_qc(pop_strat.out.bed, pop_strat.out.bim, pop_strat.out.fam)  
       }
-	  // pre-imputation without imputation
-	  if ( params.pre_impute ) {
-        preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
+      // pre-imputation without imputation
+      if ( params.pre_impute ) {
+          preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
       }
-      // local imputation 
-      if ( params.impute && !params.topmed_imputation) {
-	    preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
+      // local imputation and postImputation
+      if ( params.impute && !params.topmed_imputation ) {
+        preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
         imputation(preImputation.out.vcf)
         postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
-        if ( params.gwas ) {
-          gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
-        }
-      // Run GWAS without imputation
+      }
+
+      // Post-imputation QC after local imputation
+      if (params.post_impute && !params.topmed_imputation) {
+        postImputation(ch_imp, ch_fam)
+      // Post-imputation QC after TOPMed server imputation
+      } else if ( params.post_impute && params.topmed_imputation ) {
+        postImputation_topmed(qc_fam, topmed_results_dir)
+      }
+
+      // GWAS after post-imputation QC
+      if ( params.gwas ) {
+        gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
+      // GWAS without imputation
       } else if ( !params.impute && params.gwas && params.qc ) {
         gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
+      // GWAS using LMM with TOPMed server imputation genotype
+      } else if ( params.topmed_imputation && params.gwas_lmm ) {
+        gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.bim, postImputation_topmed.fam, list_final_patients)
       }
     }
-    
-	
-	
-  
-  // post-imputation workflow for local imputation
-	if ( params.post_impute && !params.topmed_imputation ) {
-    postImputation(ch_imp, ch_fam)
-	} else if ( params.post_impute && params.topmed_imputation ) {
-    postImputation_topmed(qc_fam, topmed_results_dir)
-  }
 }
