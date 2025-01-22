@@ -186,6 +186,20 @@ if ( params.post_impute && !params.topmed_imputation && params.gwas){
     System.exit(1)	
 }
 
+// GWAS must be run either with PLINK or GENESIS LMMs
+if ( params.gwas && params.gwas_lmm ) {
+  println("--gwas cannot be combined with --gwas_lmm")
+    println("If you wish to run simple GWAS, use --gwas. If you wish to run GWAS using linear mixed models, use --gwas_lmm")
+	println("Use --help to print help")
+    System.exit(1)	
+}
+
+// GWAS using LMMs must provide a path to file containing FIDs and IIDs with eligible patients
+if ( !params.gwas && params.gwas_lmm && !params.list_eligible_patients) {
+  println("if --gwas_lmm is true, --list_eligible_patients cannot be empty")
+    println("Please rerun --post_impute providing only a --vcf and a --fam file ")
+}
+
 
 // main workflow ----------------------------------------------------------
 workflow {
@@ -213,6 +227,13 @@ workflow {
       Channel
         .fromPath(params.fam, checkIfExists: true)
         .set{ ch_fam }
+  }
+
+  // For GWAS using linear mixed models
+  if (params.gwas_lmm) {
+    Channel
+      .fromPath(params.list_eligible_patients, checkIfExists: true)
+      .set {list_eligible_patients}
   }
   
   // Run post-imputation QC for local imputation
@@ -274,12 +295,12 @@ workflow {
     }
 
     // Post-imputation QC if TOPMed imputation and run GWAS with PLINK  
-    if (params.post_impute && params.topmed_imputation && params.gwas && !params.gwas_lmm) {
+    if (params.post_impute && params.topmed_imputation && params.gwas) {
       // variant_qc()
       postImputation_topmed(qc_fam, topmed_results_dir)
       gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) 
     // Post-imputation QC if TOPMed imputation and run GWAS using linear mixed models
-    } else if (params.post_impute && params.topmed_imputation && params.gwas && params.gwas_lmm) { 
+    } else if (params.post_impute && params.topmed_imputation && params.gwas_lmm) { 
       postImputation_topmed(qc_fam, topmed_results_dir)
       gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_eligible_patients)
     }
