@@ -257,7 +257,7 @@ workflow {
   if (params.gwas_lmm) {
     Channel
       .fromPath(params.list_final_patients, checkIfExists: true)
-      .set {list_final_patients}
+      .set { list_final_patients }
   }
   
   main:
