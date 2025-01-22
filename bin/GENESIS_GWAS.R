@@ -264,7 +264,8 @@ nullmodel <- fitNullModel(
   scanAnnot, 
   outcome = "pheno",
   # Use multiple fixed effect covariates
-  covars = c("age", "sex", "pc1", "pc2", "pc3", "pc4", "pc5", 
+  covars = c("age", "sex", 
+             "pc1", "pc2", "pc3", "pc4", "pc5", 
              "pc6", "pc7","pc8","pc9", "pc10"),
   # Use GRM to account for relatedness
   cov.mat = grm,
@@ -337,7 +338,7 @@ assoc_results_table_reformated <- assoc_results_table %>%
     method = "bonferroni"
   )) %>%
   # Apply FDR correction to p-values
-  mutate(fdr_adjusted_pvals = p.adjust(
+  mutate(qvals = p.adjust(
     p = assoc_results_table$Score.pval, 
     method = "fdr"
   ))
@@ -390,10 +391,10 @@ qq(pvector = assoc_results_table_reformated$Score.pval,
 #    )
 
 # FDR adjusted p-values
-lambda_fdr_pvals <- calculate_gif(assoc_results_table_reformated$fdr_adjusted_pvals)
+lambda_qvals <- calculate_gif(assoc_results_table_reformated$qvals)
 qq(pvector = assoc_results_table_reformated$fdr_adjusted_pvals,
    main = "QQ plot for association with adjusted p-values using FDR method", 
-   sub = paste("Lambda = ", lambda_fdr_pvals)
+   sub = paste("Lambda = ", lambda_qvals)
 )
 
 # Manhattan plot
@@ -433,7 +434,7 @@ manhattan(
   assoc_results_table_reformated,
   chr = "chr",
   bp = "pos",
-  p = "fdr_adjusted_pvals",
+  p = "qvals",
   snp = "variant.id",
   main = "Manhattan Plot with FDR adjusted p-values",
   ylim = c(0, -log10(min(assoc_results_table_reformated$P)) + 1), # Adjust for P-value range
