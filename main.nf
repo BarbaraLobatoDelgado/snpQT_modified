@@ -16,6 +16,7 @@ include {postImputation} from './workflows/postImputation.nf'
 include {postImputation_topmed} from './workflows/postImputation_topmed.nf'
 include {preImputation} from './workflows/preImputation.nf'
 include {gwas} from './workflows/gwas.nf'
+include {gwas_lmm} from './workflows/gwas_lmm.nf'
 include {download_core} from './workflows/download_db.nf'
 include {download_impute} from './workflows/download_db.nf'
 
@@ -272,12 +273,15 @@ workflow {
       }
     }
 
-    // Post-imputation QC if TOPMed imputation and GWAS
-    // aquí!!
-    if (params.post_impute && params.topmed_imputation && gwas) {
+    // Post-imputation QC if TOPMed imputation and run GWAS with PLINK  
+    if (params.post_impute && params.topmed_imputation && params.gwas && !params.gwas_lmm) {
       // variant_qc()
       postImputation_topmed(qc_fam, topmed_results_dir)
-      gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) // falta ?.out.covar
+      gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) 
+    // Post-imputation QC if TOPMed imputation and run GWAS using linear mixed models
+    } else if (params.post_impute && params.topmed_imputation && params.gwas && params.gwas_lmm) { 
+      postImputation_topmed(qc_fam, topmed_results_dir)
+      gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_eligible_patients)
     }
 
     // workflow without build conversion
