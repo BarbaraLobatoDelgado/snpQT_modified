@@ -195,7 +195,7 @@ if ( params.gwas && params.gwas_lmm ) {
 }
 
 // GWAS using LMMs must provide a path to file containing FIDs and IIDs with eligible patients
-if ( !params.gwas && params.gwas_lmm && !params.list_final_patients) {
+if ( params.gwas_lmm && !params.list_final_patients ) {
   println("if --gwas_lmm is true, --list_final_patients cannot be empty")
     println("Please rerun after providing a list with FID and IID of final patients to run GWAS")
   println("Use --help to print help")
@@ -210,7 +210,7 @@ workflow {
     Channel
       .fromPath(params.vcf, checkIfExists: true)
       .set{ ch_vcf }
-	Channel
+	  Channel
       .fromPath(params.fam, checkIfExists: true)
       .set{ ch_fam }
   }
@@ -229,13 +229,6 @@ workflow {
       Channel
         .fromPath(params.fam, checkIfExists: true)
         .set{ ch_fam }
-  }
-
-  // For GWAS using linear mixed models
-  if (params.gwas_lmm) {
-    Channel
-      .fromPath(params.list_final_patients, checkIfExists: true)
-      .set {list_final_patients}
   }
   
   // Run post-imputation QC for local imputation
@@ -259,6 +252,13 @@ workflow {
       .fromPath(params.topmed_imputation_results, checkIfExists: true)
       .set { topmed_results_dir }
   }
+
+  // For GWAS using linear mixed models
+  if (params.gwas_lmm) {
+    Channel
+      .fromPath(params.list_final_patients, checkIfExists: true)
+      .set {list_final_patients}
+  }
   
   main:
     if ( params.download_db == "core" ) {
@@ -270,7 +270,7 @@ workflow {
     // workflow with build conversion
     if ( params.convert_build) {
       buildConversion(ch_vcf, ch_fam)
-      if ( params.qc && ! params.pop_strat ) {
+      if ( params.qc && !params.pop_strat ) {
         sample_qc(buildConversion.out.bed, buildConversion.out.bim, buildConversion.out.fam)
         variant_qc(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
       } else if ( params.qc && params.pop_strat ) {
@@ -278,23 +278,25 @@ workflow {
         pop_strat(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
         variant_qc(pop_strat.out.bed, pop_strat.out.bim, pop_strat.out.fam)
       }
+
 	  // pre-imputation
 	  if ( params.pre_impute ) {
         preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
       }
+
 	  // imputation & GWAS
-      if ( params.impute ) {
+    if ( params.impute ) {
 	    preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
             imputation(preImputation.out.vcf)
-		postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
+		
+    postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
 	
     if ( params.gwas ) {
 			gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
-		}
       } else if ( !params.impute && params.gwas ) {
         gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
       }
-    }
+    } 
 
     // Post-imputation QC if TOPMed imputation and run GWAS with PLINK  
     if (params.post_impute && params.topmed_imputation && params.gwas) {
