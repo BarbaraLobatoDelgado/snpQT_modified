@@ -181,7 +181,7 @@ if ( params.post_impute && params.topmed_imputation && !params.topmed_imputation
 if ( params.post_impute && !params.topmed_imputation && params.gwas){
 	println("--post_impute is not combined with --gwas")
     println("If you wish to run --qc please first run --post-impute alone, and then use the output binary plink files to run other snpQT workflows like --qc, --pop_strat and --gwas")
-    println("Please rerun --post_impute providing only a --vcf and a --fam file ")
+    println("Please rerun --post_impute providing only a --vcf and a --fam file")
 	println("Use --help to print help")
     System.exit(1)	
 }
@@ -195,9 +195,11 @@ if ( params.gwas && params.gwas_lmm ) {
 }
 
 // GWAS using LMMs must provide a path to file containing FIDs and IIDs with eligible patients
-if ( !params.gwas && params.gwas_lmm && !params.list_eligible_patients) {
-  println("if --gwas_lmm is true, --list_eligible_patients cannot be empty")
-    println("Please rerun --post_impute providing only a --vcf and a --fam file ")
+if ( !params.gwas && params.gwas_lmm && !params.list_final_patients) {
+  println("if --gwas_lmm is true, --list_final_patients cannot be empty")
+    println("Please rerun after providing a list with FID and IID of final patients to run GWAS")
+  println("Use --help to print help")
+    System.exit(1)	
 }
 
 
