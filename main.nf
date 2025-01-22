@@ -234,8 +234,8 @@ workflow {
   // For GWAS using linear mixed models
   if (params.gwas_lmm) {
     Channel
-      .fromPath(params.list_eligible_patients, checkIfExists: true)
-      .set {list_eligible_patients}
+      .fromPath(params.list_final_patients, checkIfExists: true)
+      .set {list_final_patients}
   }
   
   // Run post-imputation QC for local imputation
@@ -304,7 +304,7 @@ workflow {
     // Post-imputation QC if TOPMed imputation and run GWAS using linear mixed models
     } else if (params.post_impute && params.topmed_imputation && params.gwas_lmm) { 
       postImputation_topmed(qc_fam, topmed_results_dir)
-      gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_eligible_patients)
+      gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_final_patients)
     }
 
     // workflow without build conversion
