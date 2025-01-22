@@ -56,7 +56,8 @@
   # Run GWAS using mixed models
   gwas_lmm: false
   # List with FID and IID patients eligible for GWAS 
-  list_final_patients: '~/oncothromb02/GWAS/raw_data/patient_code_eligible_oncoth2.txt'
+  list_final_patients: ''
+
   # Download and prepare a core database passing "core"
   # or an imputation-related database passing "impute"
   # (not recommended, as it is slow, instead download the database directly from zenodo)
