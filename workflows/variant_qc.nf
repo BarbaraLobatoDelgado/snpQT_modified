@@ -56,12 +56,12 @@ workflow variant_qc {
     Channel
       .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
       .set{ rmd }
-    // Pass yaml file containig parameters for nextflow run
-    yaml_file_path = paramsFile
-    Channel
-      .path(params.yaml_file_path)
-      .set { yaml_file }
-    report("qc", figures, rmd, yaml_file)
+    // // Pass yaml file containig parameters for nextflow run
+    // yaml_file_path = paramsFile
+    // Channel
+    //   .path(params.yaml_file_path)
+    //   .set { yaml_file }
+    report("qc", figures, rmd, "${params}")
 
     bed = test_missing.out.bed
     bim = test_missing.out.bim
@@ -89,10 +89,10 @@ workflow variant_qc {
 		Channel
 		  .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
 		  .set{ rmd }
-    Channel
-      .path(params.yaml_file_path)
-      .set { yaml_file }
-		report("qc", figures, rmd, yaml_file)
+    // Channel
+    //   .path(params.yaml_file_path)
+    //   .set { yaml_file }
+		report("qc", figures, rmd, "${params}")
 		
 		bed = maf.out.bed
 		bim = maf.out.bim
