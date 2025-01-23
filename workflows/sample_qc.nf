@@ -131,6 +131,9 @@ workflow sample_qc {
     Channel
       .fromPath("$baseDir/bootstrap/sample_report.Rmd", checkIfExists: true)
       .set{ rmd }
+    // Channel
+    //   .value(params.pop_strat_filter)
+    //   .set { pop_strat_filter }
     report("qc", figures, rmd)  
 	
    emit:
