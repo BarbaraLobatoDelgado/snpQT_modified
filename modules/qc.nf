@@ -683,10 +683,6 @@ process report {
     '''
     #!/usr/bin/env Rscript
 
-    rmarkdown::render(
-        '!{rmd}', 
-        output_options=list(self_contained=TRUE), 
-        params = list(pop_strat_filter = if (!is.null('!{pop_strat_filter}')) '!{pop_strat_filter}' else "")
-        )
+    rmarkdown::render('!{rmd}', output_options=list(self_contained=TRUE), params = list(pop_strat_filter = if (!is.null('!{pop_strat_filter}')) '!{pop_strat_filter}' else ""))
     '''
 }
