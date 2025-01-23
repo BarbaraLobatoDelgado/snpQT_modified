@@ -130,9 +130,9 @@ workflow sample_qc {
 	
     Channel
       .fromPath("$baseDir/bootstrap/sample_report.Rmd", checkIfExists: true)
-      .set{ rmd }
+      .set { rmd }
     // Pass yaml file containig parameters for nextflow run
-    yaml_file_path = file(params)
+    yaml_file_path = params
     Channel
       .path(params.yaml_file_path)
       .set { yaml_file }
