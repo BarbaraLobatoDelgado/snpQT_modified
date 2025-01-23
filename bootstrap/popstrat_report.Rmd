@@ -15,7 +15,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, include=FALSE}
 # Load the YAML file specified in the params
-config <- read_yaml(params)
+# config <- read_yaml(params)
+config <- yaml.load(params)
 
 # Access the specific parameter, e.g., `popfile`
 pop_strat_filter <- config$pop_strat_filter
