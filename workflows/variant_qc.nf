@@ -56,8 +56,10 @@ workflow variant_qc {
     Channel
       .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
       .set{ rmd }
+    // Pass yaml file containig parameters for nextflow run
+    yaml_file_path = paramsFile
     Channel
-      .value(params.yaml_file)
+      .path(params.yaml_file_path)
       .set { yaml_file }
     report("qc", figures, rmd, yaml_file)
 
@@ -88,7 +90,7 @@ workflow variant_qc {
 		  .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
 		  .set{ rmd }
     Channel
-      .value(params.yaml_file)
+      .path(params.yaml_file_path)
       .set { yaml_file }
 		report("qc", figures, rmd, yaml_file)
 		

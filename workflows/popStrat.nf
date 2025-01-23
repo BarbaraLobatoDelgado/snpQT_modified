@@ -84,9 +84,10 @@ workflow pop_strat {
     Channel
       .fromPath("$baseDir/bootstrap/popstrat_report.Rmd", checkIfExists: true)
       .set{ rmd }
-    // Value of parameter pop_strat_filter (controls whether patients are excluded based on population ancestry check)
+    // Pass yaml file containig parameters for nextflow run
+    yaml_file_path = paramsFile
     Channel
-      .value(params.yaml_file)
+      .path(params.yaml_file_path)
       .set { yaml_file }
     report("pop_strat", figures, rmd, yaml_file)   
 
