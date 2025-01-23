@@ -674,7 +674,7 @@ process report {
     val(dir)
     path(x)
     path(rmd)
-    val(pop_strat_filter), optional: true // Mark this input as optional
+    val(pop_strat_filter) optional true // Mark this input as optional
 
     output:
     path "*_report.html"
