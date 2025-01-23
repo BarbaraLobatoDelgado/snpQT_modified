@@ -278,37 +278,35 @@ workflow {
         pop_strat(sample_qc.out.bed, sample_qc.out.bim, sample_qc.out.fam)
         variant_qc(pop_strat.out.bed, pop_strat.out.bim, pop_strat.out.fam)
       }
-    }
-
-	  // pre-imputation
-	  if ( params.pre_impute ) {
+      
+      // pre-imputation
+      if ( params.pre_impute ) {
         preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
+        }
+        
+      // imputation & GWAS
+      if ( params.impute ) {
+        preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
+        imputation(preImputation.out.vcf)
+        postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
+        
+        if ( params.gwas ) {
+          gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
+          // Run GWAS without imputation
+          } else if ( !params.impute && params.gwas ) {
+            gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
+          }
+        } 
+
+      // Post-imputation QC if TOPMed imputation and run GWAS with PLINK  
+      if (params.post_impute && params.topmed_imputation && params.gwas) {
+        postImputation_topmed(qc_fam, topmed_results_dir)
+        gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) 
+      // Post-imputation QC if TOPMed imputation and run GWAS using linear mixed models
+      } else if (params.post_impute && params.topmed_imputation && params.gwas_lmm) { 
+        postImputation_topmed(qc_fam, topmed_results_dir)
+        gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_final_patients)
       }
-
-	  // imputation & GWAS
-    if ( params.impute ) {
-	    preImputation(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam)
-      imputation(preImputation.out.vcf)
-      postImputation(imputation.out.imputed_vcf, variant_qc.out.fam)
-  
-      if ( params.gwas ) {
-        gwas(postImputation.out.bed, postImputation.out.bim, postImputation.out.fam, variant_qc.out.covar)
-      // Run GWAS without imputation
-      } else if ( !params.impute && params.gwas ) {
-        gwas(variant_qc.out.bed, variant_qc.out.bim, variant_qc.out.fam, variant_qc.out.covar)
-      }
-
-    } 
-
-    // Post-imputation QC if TOPMed imputation and run GWAS with PLINK  
-    if (params.post_impute && params.topmed_imputation && params.gwas) {
-      // variant_qc()
-      postImputation_topmed(qc_fam, topmed_results_dir)
-      gwas(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, variant_qc.out.covar) 
-    // Post-imputation QC if TOPMed imputation and run GWAS using linear mixed models
-    } else if (params.post_impute && params.topmed_imputation && params.gwas_lmm) { 
-      postImputation_topmed(qc_fam, topmed_results_dir)
-      gwas_lmm(postImputation_topmed.out.bed, postImputation_topmed.out.bim, postImputation_topmed.out.fam, list_final_patients)
     }
 
     // OPTION 2: workflow without build conversion

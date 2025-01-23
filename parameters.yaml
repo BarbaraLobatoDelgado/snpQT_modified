@@ -58,6 +58,7 @@
   # List with FID and IID patients eligible for GWAS 
   list_final_patients: ''
 
+
   # Download and prepare a core database passing "core"
   # or an imputation-related database passing "impute"
   # (not recommended, as it is slow, instead download the database directly from zenodo)
