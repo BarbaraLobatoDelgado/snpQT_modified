@@ -674,8 +674,7 @@ process report {
     val(dir)
     path(x)
     path(rmd)
-    // val(pop_strat_filter)
-    path(yaml_file)
+    val(list_params)
 
     output:
     path "*_report.html"
@@ -686,7 +685,7 @@ process report {
 
     rmarkdown::render(
         '!{rmd}', 
-        params = list(yaml_file = "!{yaml_file}"),
+        params = list(yaml_file = "!{list_params}"),
         output_options=list(self_contained=TRUE)
         )
     '''
