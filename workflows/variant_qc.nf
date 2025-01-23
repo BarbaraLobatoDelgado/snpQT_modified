@@ -56,7 +56,10 @@ workflow variant_qc {
     Channel
       .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
       .set{ rmd }
-    report("qc", figures, rmd)
+    Channel
+      .value(params.pop_strat_filter)
+      .set { pop_strat_filter }
+    report("qc", figures, rmd, pop_strat_filter)
 
     bed = test_missing.out.bed
     bim = test_missing.out.bim
@@ -84,7 +87,10 @@ workflow variant_qc {
 		Channel
 		  .fromPath("$baseDir/bootstrap/variant_report.Rmd", checkIfExists: true)
 		  .set{ rmd }
-		report("qc", figures, rmd)
+    Channel
+      .value(params.pop_strat_filter)
+      .set { pop_strat_filter }
+		report("qc", figures, rmd, pop_strat_filter)
 		
 		bed = maf.out.bed
 		bim = maf.out.bim
