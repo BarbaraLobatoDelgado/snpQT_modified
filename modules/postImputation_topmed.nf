@@ -83,6 +83,8 @@ process sort_vcf {
 // STEP 6: remove "0_" substring from IDs (added during TOPMed imputation)
 process trim_ids {
     label 'bcftools1_5'
+    // Publish VCF after imputation to get SNPs used in Genetic Risk Scores
+    publishDir "${params.results}/post_imputation/imputed_VCF_files/"
 
     input:
     path(vcf)
