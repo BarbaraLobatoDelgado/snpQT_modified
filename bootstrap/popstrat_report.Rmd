@@ -8,6 +8,7 @@ output:
 
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(yaml)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 

@@ -33,7 +33,7 @@ workflow sample_qc {
     plot_missingness(individual_missingness.out.imiss_before, individual_missingness.out.imiss_after, params.mind)
     Channel
       .fromPath("${params.db}/PCA.exclude.regions.b37.txt", checkIfExists: true)
-      .set{exclude}
+      .set{ exclude }
     
     if (params.sexcheck && params.keep_sex_chroms) {
         check_sex(individual_missingness.out.bed, individual_missingness.out.bim, individual_missingness.out.fam, params.F_threshold_male, params.F_threshold_female)
