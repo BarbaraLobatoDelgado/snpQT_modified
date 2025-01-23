@@ -45,10 +45,9 @@ workflow pop_strat {
       .fromPath("${params.db}/hg38.fa", checkIfExists: true)
       .set { g38 }
     run_snpflip(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, g37, g38)
-    flip_snps(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, run_snpflip.out.rev) // , run_snpflip.out.ambig
+    flip_snps(filter_maf.out.bed, filter_maf.out.bim, filter_maf.out.fam, run_snpflip.out.rev) 
     remove_ambiguous_snps(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, run_snpflip.out.ambig)
     align(remove_ambiguous_snps.out.bed, remove_ambiguous_snps.out.bim, remove_ambiguous_snps.out.fam, ref_bed, ref_bim, ref_fam)
-    // align(flip_snps.out.bed, flip_snps.out.bim, flip_snps.out.fam, ref_bed, ref_bim, ref_fam)
     merge(align.out.bed, align.out.bim, align.out.fam, ref_bed, ref_bim, ref_fam)
     pca_prep(merge.out.bed, merge.out.bim, merge.out.fam, exclude)
     Channel
@@ -85,7 +84,11 @@ workflow pop_strat {
     Channel
       .fromPath("$baseDir/bootstrap/popstrat_report.Rmd", checkIfExists: true)
       .set{ rmd }
-    report("pop_strat", figures, rmd)   
+    // Value of parameter pop_strat_filter (controls whether patients are excluded based on population ancestry check)
+    Channel
+      .value(params.pop_strat_filter)
+      .set { pop_strat_filter }
+    report("pop_strat", figures, rmd, pop_strat_filter)   
 
   emit:
     bed = extract_homogenous.out.bed

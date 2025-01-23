@@ -674,6 +674,7 @@ process report {
     val(dir)
     path(x)
     path(rmd)
+    val(pop_strat_filter)
 
     output:
     path "*_report.html"
@@ -682,6 +683,6 @@ process report {
     '''
     #!/usr/bin/env Rscript
 
-    rmarkdown::render('!{rmd}', output_options=list(self_contained=TRUE))
+    rmarkdown::render('!{rmd}', output_options=list(self_contained=TRUE), params = list(pop_strat_filter = '!{pop_strat_filter}'))
     '''
 }
