@@ -14,14 +14,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r}
-# # Load the YAML file specified in the params
-# config <- read_yaml("../")
-# 
-# # Access the specific parameter, e.g., `popfile`
-# popfile_param <- config$popfile
-# 
-# # Optionally print it to check
-# print(popfile_param)
+# Load the YAML file specified in the params
+config <- read_yaml(params$yaml_file)
+
+# Access the specific parameter, e.g., `popfile`
+pop_strat_filter <- config$pop_strat_filter
+
+# Optionally print it to check
+print(pop_strat_filter)
 ```
 
 

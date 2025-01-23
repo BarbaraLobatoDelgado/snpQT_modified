@@ -132,9 +132,9 @@ workflow sample_qc {
       .fromPath("$baseDir/bootstrap/sample_report.Rmd", checkIfExists: true)
       .set{ rmd }
     Channel
-      .value(params.pop_strat_filter)
-      .set { pop_strat_filter }
-    report("qc", figures, rmd, pop_strat_filter)  
+      .value(params.yaml_file)
+      .set { yaml_file }
+    report("qc", figures, rmd, yaml_file)  
 	
    emit:
     bed

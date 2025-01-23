@@ -86,9 +86,9 @@ workflow pop_strat {
       .set{ rmd }
     // Value of parameter pop_strat_filter (controls whether patients are excluded based on population ancestry check)
     Channel
-      .value(params.pop_strat_filter)
-      .set { pop_strat_filter }
-    report("pop_strat", figures, rmd, pop_strat_filter)   
+      .value(params.yaml_file)
+      .set { yaml_file }
+    report("pop_strat", figures, rmd, yaml_file)   
 
   emit:
     bed = extract_homogenous.out.bed
