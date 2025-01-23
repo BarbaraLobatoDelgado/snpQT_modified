@@ -132,7 +132,9 @@ workflow sample_qc {
       .fromPath("$baseDir/bootstrap/sample_report.Rmd", checkIfExists: true)
       .set{ rmd }
     // Pass yaml file containig parameters for nextflow run
-    yaml_file_path = params.fileName
+    // yaml_file_path = params.fileName
+    fileName = nextflow.available("params.fileName")
+    yaml_file_path = readFromFile(fileName)
     Channel
       .path(params.yaml_file_path)
       .set { yaml_file }
