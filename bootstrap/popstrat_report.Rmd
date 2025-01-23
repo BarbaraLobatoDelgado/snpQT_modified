@@ -11,7 +11,11 @@ library(tidyverse)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+The aim of the population stratification is to identify individuals of an ancestry other than the reported one, based on population structure inferred from 1,000 Genomes Project. This step minimises the possibility that the difference in the alleles frequencies is caused by different ancestry of the samples. 
+
 ## PCA 
+
+Principal Components Analysis (PCA) is performed using those SNPs shared between our sample (marked as 'OWN') and the individuals in 1,000 Genomes Project. Subjects of the same ancestry are expected to cluster together.
 
 ### PC1 vs PC2
 
