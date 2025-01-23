@@ -84,12 +84,12 @@ workflow pop_strat {
     Channel
       .fromPath("$baseDir/bootstrap/popstrat_report.Rmd", checkIfExists: true)
       .set{ rmd }
-    // Pass yaml file containig parameters for nextflow run
-    yaml_file_path = paramsFile
-    Channel
-      .path(params.yaml_file_path)
-      .set { yaml_file }
-    report("pop_strat", figures, rmd, yaml_file)   
+    // // Pass yaml file containig parameters for nextflow run
+    // yaml_file_path = paramsFile
+    // Channel
+    //   .path(params.yaml_file_path)
+    //   .set { yaml_file }
+    report("pop_strat", figures, rmd, "${params}")   
 
   emit:
     bed = extract_homogenous.out.bed
