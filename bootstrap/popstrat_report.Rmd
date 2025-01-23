@@ -15,7 +15,7 @@ The aim of the population stratification is to identify individuals of an ancest
 
 ## PCA 
 
-Principal Components Analysis (PCA) is performed using those SNPs shared between our sample (marked as 'OWN') and the individuals in 1,000 Genomes Project. Subjects of the same ancestry are expected to cluster together.
+Principal Components Analysis (PCA) is performed using those SNPs shared between our sample (marked as 'OWN') and the individuals in 1,000 Genomes Project. Subjects of the same ancestry are expected to cluster together. It is recommended to exclude those subjects whose reported and inferred ancestry are not the same. 
 
 ### PC1 vs PC2
 
