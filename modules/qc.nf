@@ -682,10 +682,40 @@ process report {
     '''
     #!/usr/bin/env Rscript
 
+    library(jsonlite)
+
+    # Parse the params string into a list
+    params <- tryCatch({
+        params_string <- "!{list_params}"
+        params_string <- gsub("^\\[|\\]$", "", params_string)  # Remove square brackets
+        key_value_pairs <- strsplit(params_string, ",\\s*")[[1]]  # Split by comma
+        params_list <- lapply(key_value_pairs, function(pair) {
+            key_value <- strsplit(pair, ":")[[1]]
+            key <- trimws(key_value[1])
+            value <- trimws(paste(key_value[-1], collapse = ":"))
+            
+            # Convert value to appropriate type
+            if (value %in% c("true", "false")) {
+                value <- as.logical(value)
+            } else if (grepl("^-?\\d+(\\.\\d+)?$", value)) {
+                value <- as.numeric(value)
+            } else if (value == "") {
+                value <- NULL
+            } else {
+                value <- gsub('^"|"$', '', value)  # Remove quotes
+            }
+            
+            list(key, value)
+        })
+        setNames(lapply(params_list, `[[`, 2), sapply(params_list, `[[`, 1))
+    }, error = function(e) {
+        stop("Failed to parse params: ", e$message)
+    })
+
     rmarkdown::render(
-        '!{rmd}', 
-        params = list(params = "!{list_params}"),
-        output_options=list(self_contained=TRUE)
-        )
+        '!{rmd}',
+        params = params,
+        output_options = list(self_contained = TRUE)
+    )
     '''
 }
