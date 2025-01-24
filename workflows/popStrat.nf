@@ -89,7 +89,7 @@ workflow pop_strat {
     // Channel
     //   .path(params.yaml_file_path)
     //   .set { yaml_file }
-    report("pop_strat", figures, rmd, "${params}")   
+    report("pop_strat", figures, rmd, params)   
 
   emit:
     bed = extract_homogenous.out.bed

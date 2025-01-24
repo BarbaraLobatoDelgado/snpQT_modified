@@ -682,6 +682,8 @@ process report {
     '''
     #!/usr/bin/env Rscript
 
+    
+
     rmarkdown::render(
         '!{rmd}', 
         params = list(yaml_file = "!{list_params}"),
