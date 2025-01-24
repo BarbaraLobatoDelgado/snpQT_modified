@@ -664,7 +664,6 @@ process parse_logs {
 // STEP E14: Make an .html report ---------------------------------------------------
 process report {
     label 'small'
-
     publishDir "${params.results}/${dir}/", mode: 'copy'
     // rmarkdown doesn't respect symlinks
     // https://github.com/rstudio/rmarkdown/issues/1508
