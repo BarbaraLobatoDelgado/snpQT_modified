@@ -684,7 +684,7 @@ process report {
 
     rmarkdown::render(
         '!{rmd}', 
-        params = list(yaml_file = "!{list_params}"),
+        params = list(params = "!{list_params}"),
         output_options=list(self_contained=TRUE)
         )
     '''
