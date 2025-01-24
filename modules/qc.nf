@@ -697,7 +697,7 @@ process report {
             # Convert value to appropriate type
             if (value %in% c("true", "false")) {
                 value <- as.logical(value)
-            } else if (grepl("^-?\\d+(\\.\\d+)?$", value)) {
+            } else if (grepl("^-?\\\\d+(\\\\.\\\\d+)?$", value)) {
                 value <- as.numeric(value)
             } else if (value == "") {
                 value <- NULL
