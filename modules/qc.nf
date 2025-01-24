@@ -99,25 +99,6 @@ process check_sex {
     path "C3.log", emit: log
     path "before.sexcheck", emit: sexcheck_before
     path "after.sexcheck", emit: sexcheck_after
- 
-    
-    // shell:
-    // '''
-    // plink --bfile !{C2_bed.baseName} \
-    //     --check-sex \
-    //     --out before
-    // # Identify the samples with sex discrepancies 
-    // grep "PROBLEM" before.sexcheck | awk '{print $1,$2}'> \
-    //     problematic_samples.txt
-    // # Delete all problematic samples
-    // plink --bfile !{C2_bed.baseName} \
-    //     --remove problematic_samples.txt \
-    //     --make-bed \
-    //     --out C3
-    // plink --bfile C3 \
-    //     --check-sex \
-	// --out after 
-    // '''
 
     script:
     """
