@@ -136,7 +136,7 @@ workflow sample_qc {
     // Channel
     //   .path(params.yaml_file_path)
     //   .set { yaml_file }
-    report("qc", figures, rmd, ${params})  
+    report("qc", figures, rmd, "${params}")  
 	
    emit:
     bed
