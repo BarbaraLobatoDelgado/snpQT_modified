@@ -20,38 +20,13 @@ params <- list(
     db = params$db,
     fam = params$fam,
     cores = params$cores,
-    TOPMed_imputation = params$TOPMed_imputation
+    TOPMed_imputation = params$TOPMed_imputation,
+    pop_strat_filter = params$pop_strat_filter
+    
 )
 
 # Print the params to verify
 print(params)
-```
-
-
-```{r, include=FALSE}
-# # Load the YAML file specified in the params
-# # config <- read_yaml(params)
-# params <- "[db:/home/blobato/nextflow_pipelines/snpQT/db/, fam:oncoth2_tabs.fam, vcf:false, bed:oncoth2_tabs.bed, bim:oncoth2_tabs.bim, results:results_rerun/, TOPMed_imputation_files:results/TOPMed_imputation_results/, cores:32, convert_build:false, qc:true, pop_strat:true, pop_strat_filter:false, impute:false, pre_impute:false, output_chr:26, TOPMed_imputation:false, post_impute:false, gwas:false, gwas_lmm:false, list_final_patients:, download_db:false, help:false, input_build:38, output_build:37, mem:16, sexcheck:true, F_threshold_male:0.8, F_threshold_female:0.2, keep_sex_chroms:true, mind:0.02, indep_pairwise:50 5 0.2, bad_ld:false, variant_geno:0.02, king_cutoff:0.125, hwe:1.0E-6, maf:0.01, missingness:1.0E-6, popfile:super, popcode: , parfile:false, pca_covars:20, rm_missing_pheno:false, heterozygosity:true, covar_file:false, linear:false, topmed_password:z<O4ylEKJ0Bk0w, impute_chroms:1, info:0.7, r2:0.7, impute_maf:0.01, qc_fam:results/qc/bfiles/E11.fam, impute5_version:_1.1.4_static]"
-# 
-# 
-# list_params <- gsub(":", "=", params)
-# list_params <- gsub("\\[", "{", list_params)
-# list_params <- gsub("\\]", "}", list_params)
-# 
-# # Now, use eval and parse to convert it into a valid R list
-# param_list <- eval(parse(text = list_params))
-# 
-# # Print the parameter for debugging
-# print(param_list$vcf)  # Example: should print FALSE
-# print(param_list$pop_strat_filter)  # Example: should print FALSE
-# 
-# config <- yaml.load(params)
-# 
-# # Access the specific parameter, e.g., `popfile`
-# pop_strat_filter <- config$pop_strat_filter
-# 
-# # Optionally print it to check
-# print(pop_strat_filter)
 ```
 
 
