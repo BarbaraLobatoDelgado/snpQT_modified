@@ -15,14 +15,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 
 ```{r input_params, include=FALSE}
-# Nextflow parameters as input as string
-params_string <- params$list_params
+# Access params in RMarkdown
+params <- list(
+    db = params$db,
+    fam = params$fam,
+    cores = params$cores,
+    TOPMed_imputation = params$TOPMed_imputation
+)
 
-# Convert to JSON format
-params_json <- tryCatch({
-  # Remove square brackets
-  params_string <- gsub("^\\[|\\]$", "", params_string)
-})
+# Print the params to verify
+print(params)
 ```
 
 
