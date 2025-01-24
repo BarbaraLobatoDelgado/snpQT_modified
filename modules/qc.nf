@@ -686,14 +686,14 @@ process report {
 
     # Parse the params string into a list
     params <- tryCatch({
-        params_string <- "!{list_params}"
+        params_string <- "[db:/home/blobato/nextflow_pipelines/snpQT/db/, fam:oncoth2_tabs.fam, vcf:false, bed:oncoth2_tabs.bed, bim:oncoth2_tabs.bim, results:results_rerun/, TOPMed_imputation_files:results/TOPMed_imputation_results/, cores:32, convert_build:false, qc:true, pop_strat:true, pop_strat_filter:false, impute:false, pre_impute:false, output_chr:26, TOPMed_imputation:false, post_impute:false, gwas:false, gwas_lmm:false, list_final_patients:, download_db:false, help:false, input_build:38, output_build:37, mem:16, sexcheck:true, F_threshold_male:0.8, F_threshold_female:0.2, keep_sex_chroms:true, mind:0.02, indep_pairwise:50 5 0.2, bad_ld:false, variant_geno:0.02, king_cutoff:0.125, hwe:1.0E-6, maf:0.01, missingness:1.0E-6, popfile:super, popcode: , parfile:false, pca_covars:20, rm_missing_pheno:false, heterozygosity:true, covar_file:false, linear:false, topmed_password:z<O4ylEKJ0Bk0w, impute_chroms:1, info:0.7, r2:0.7, impute_maf:0.01, qc_fam:results/qc/bfiles/E11.fam, impute5_version:_1.1.4_static]"
         params_string <- gsub("^\\[|\\]$", "", params_string)  # Remove square brackets
         key_value_pairs <- strsplit(params_string, ",\\s*")[[1]]  # Split by comma
         params_list <- lapply(key_value_pairs, function(pair) {
             key_value <- strsplit(pair, ":")[[1]]
             key <- trimws(key_value[1])
             value <- trimws(paste(key_value[-1], collapse = ":"))
-            
+
             # Convert value to appropriate type
             if (value %in% c("true", "false")) {
                 value <- as.logical(value)
@@ -704,7 +704,7 @@ process report {
             } else {
                 value <- gsub('^"|"$', '', value)  # Remove quotes
             }
-            
+
             list(key, value)
         })
         setNames(lapply(params_list, `[[`, 2), sapply(params_list, `[[`, 1))
