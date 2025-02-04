@@ -670,7 +670,8 @@ process report {
 
     # Parse the params string into a list
     params <- tryCatch({
-        params_string <- gsub("^\\\\[|\\\\]$", "", !{list_params}) # Remove square brackets. Careful with escaping the dash character in both Nextflow and gsub()
+        # params_string <- gsub("^\\\\[|\\\\]$", "", !{list_params}) # Remove square brackets. Careful with escaping the dash character in both Nextflow and gsub()
+        params_string <- gsub("^\\[|\\]$", "", !{list_params})
         key_value_pairs <- strsplit(params_string, ",\\\\s*")[[1]]  # Split by comma
         params_list <- lapply(key_value_pairs, function(pair) {
             key_value <- strsplit(pair, ":")[[1]]
