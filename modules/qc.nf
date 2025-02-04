@@ -664,6 +664,9 @@ process report {
     #!/usr/bin/env Rscript
 
     library(jsonlite)
+    
+    cat("Received params string:", "!{list_params}", "\n")
+
 
     # Parse the params string into a list
     params <- tryCatch({
