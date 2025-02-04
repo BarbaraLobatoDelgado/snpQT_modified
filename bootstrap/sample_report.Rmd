@@ -11,7 +11,81 @@ library(tidyverse)
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+```{r input_params, include=FALSE}
+# Access params in RMarkdown
+params <- list(
+    db = params$db,
+    fam = params$fam,
+    cores = params$cores,
+    TOPMed_imputation = params$TOPMed_imputation,
+    pop_strat_filter = params$pop_strat_filter,
+    vcf = params$vcf,
+    bed = params$bed,
+    bim = params$bim,
+    results = params$results,
+    convert_build = params$convert_build,
+    qc = params$qc,
+    pop_strat = params$pop_strat,
+    impute = params$impute,
+    pre_impute = params$pre_impute,
+    output_chr = params$output_chr,
+    post_impute = params$post_impute,
+    gwas = params$gwas,
+    gwas_lmm = params$gwas_lmm,
+    list_final_patients = params$list_final_patients,
+    download_db = params$download_db,
+    help = params$help,
+    input_build = params$input_build,
+    output_build = params$output_build,
+    mem = params$mem,
+    sexcheck = params$sexcheck,
+    F_threshold_male = params$F_threshold_male,
+    F_threshold_female = params$F_threshold_female,
+    keep_sex_chroms = params$keep_sex_chroms,
+    mind = params$mind,
+    indep_pairwise = params$indep_pairwise,
+    bad_ld = params$bad_ld,
+    variant_geno = params$variant_geno,
+    king_cutoff = params$king_cutoff,
+    hwe = params$hwe,
+    maf = params$maf,
+    missingness = params$missingness,
+    popfile = params$popfile,
+    popcode = params$popcode,
+    parfile = params$parfile,
+    pca_covars = params$pca_covars,
+    rm_missing_pheno = params$rm_missing_pheno,
+    heterozygosity = params$heterozygosity,
+    covar_file = params$covar_file,
+    linear = params$linear,
+    topmed_password = params$topmed_password,
+    impute_chroms = params$impute_chroms,
+    info = params$info,
+    r2 = params$r2,
+    impute_maf = params$impute_maf,
+    qc_fam = params$qc_fam,
+    impute5_version = params$impute5_version
+)
+```
+
+
 ## Check sex
+
+Samples where pedigree sex does not agree with the predicted sex based on sex chromosome homozygosity. 
+
+Males typically have only one X chromosome, so their heterozygosity on the X chromosome should be close to zero. On the opposite, females have two X chromosomes and should display a higher heterozygosity rate on SNPs located at the X chromosome. 
+
+The F value (or F-statistic or inbreeding coefficient) is calculated as follows
+
+$$
+F = 1 - \frac{\text{expected heterozygosity}}{\text{observed heterozygosity}}
+$$
+
+using the SNPs in the X chromosome.
+
+Different thresholds can be applied to remove samples depending on the declared sex. In this analysis, males are removed if F is below `r F_threshold_male` and females are removed if F is above `r F_threshold_female`.
+
 
 ```{r, echo=FALSE, out.width="80%"}
 sexcheck <- list.files()[str_detect(list.files(), "sexcheck*")]
