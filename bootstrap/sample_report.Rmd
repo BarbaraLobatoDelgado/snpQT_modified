@@ -76,15 +76,13 @@ Samples where pedigree sex does not agree with the predicted sex based on sex ch
 
 Males typically have only one X chromosome, so their heterozygosity on the X chromosome should be close to zero. On the opposite, females have two X chromosomes and should display a higher heterozygosity rate on SNPs located at the X chromosome. 
 
-The F value (or F-statistic or inbreeding coefficient) is calculated as follows
+The F value (or F-statistic or inbreeding coefficient) is calculated as follows:
 
 $$
 F = 1 - \frac{\text{expected heterozygosity}}{\text{observed heterozygosity}}
 $$
 
-using the SNPs in the X chromosome.
-
-Different thresholds can be applied to remove samples depending on the declared sex. In this analysis, males are removed if F is below `r params$F_threshold_male` and females are removed if F is above `r params$F_threshold_female`.
+Different thresholds can be applied to remove samples depending on the declared sex. In this analysis, males are removed if F < `r params$F_threshold_male` and females are removed if F > `r params$F_threshold_female`.
 
 
 ```{r, echo=FALSE, out.width="80%"}
