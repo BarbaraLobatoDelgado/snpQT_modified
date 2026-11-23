@@ -18,7 +18,7 @@ params <- list(
     db = params$db,
     fam = params$fam,
     cores = params$cores,
-    TOPMed_imputation = params$TOPMed_imputation,
+    topmed_imputation = params$topmed_imputation,
     pop_strat_filter = params$pop_strat_filter,
     vcf = params$vcf,
     bed = params$bed,
