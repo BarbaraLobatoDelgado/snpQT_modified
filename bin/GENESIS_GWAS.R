@@ -9,19 +9,16 @@
 
 
 # Load libraries
-pacman::p_load(
-  an9elproject,
-  data.table,
-  tidyverse, 
-  magrittr,
-  ggplot2,
-  GWASTools,
-  SNPRelate,
-  GENESIS, 
-  qqman,
-  biomaRt,
-  install = FALSE, update = FALSE
-)
+library(an9elproject)
+library(data.table)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(GWASTools)
+library(SNPRelate)
+library(GENESIS)
+library(qqman)
+library(biomaRt)
 
 # When running this script from snpQT pipeline
 # Args
